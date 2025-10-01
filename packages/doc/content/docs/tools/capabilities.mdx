@@ -1,0 +1,254 @@
+---
+title: "Capabilities"
+description: "Organize tools into logical groups"
+draft: true
+---
+
+Capabilities group tools for coordinated workflows and access control.
+
+## What are Capabilities?
+
+Capabilities provide logical groupings of tools:
+- **Tool Composition**: Combine multiple tools
+- **Access Control**: Manage permissions at group level
+- **Workflow Organization**: Tools that work together
+- **Agent Assignment**: Control which agents access which tool sets
+
+## Capability Types
+
+### Domain Capabilities
+Group by business domain:
+
+```json
+{
+  "name": "customer_management",
+  "tools": [
+    "salesforce_crm",
+    "customer_database",
+    "email_automation",
+    "support_ticketing"
+  ]
+}
+```
+
+### Workflow Capabilities
+Group by business process:
+
+```json
+{
+  "name": "content_publishing",
+  "tools": [
+    "content_cms",
+    "image_processing",
+    "social_media_apis"
+  ]
+}
+```
+
+### Technical Capabilities
+Group by technical function:
+
+```json
+{
+  "name": "data_analytics",
+  "tools": [
+    "database_connector",
+    "data_processor",
+    "visualization_engine"
+  ]
+}
+```
+
+## Configuration
+
+### Creating Capabilities
+
+In 2LY dashboard:
+
+1. Navigate to **Tools** section
+2. Select **Capabilities**
+3. Click **Create Capability**
+4. Add tools to capability
+5. Assign to agents
+
+### Capability Structure
+
+```json
+{
+  "name": "e_commerce_ops",
+  "description": "E-commerce management",
+  "tools": [
+    {
+      "name": "inventory_management",
+      "required": true
+    },
+    {
+      "name": "payment_processing",
+      "required": true
+    },
+    {
+      "name": "order_fulfillment",
+      "required": false
+    }
+  ]
+}
+```
+
+**Fields:**
+- `name`: Unique capability identifier
+- `description`: What the capability does
+- `tools`: Array of tool configurations
+- `required`: Whether tool must be available
+
+## Assigning Capabilities
+
+### To Agents
+
+Assign entire capability set to agent:
+
+```json
+{
+  "agent": "sales-agent",
+  "capabilities": [
+    "customer_management",
+    "e_commerce_ops"
+  ]
+}
+```
+
+Agent gets all tools in assigned capabilities.
+
+### To Runtimes
+
+Control which runtime provides which capabilities:
+
+```json
+{
+  "runtime": "edge-runtime-1",
+  "capabilities": [
+    "local_filesystem",
+    "docker_management"
+  ]
+}
+```
+
+## Access Control
+
+### Capability-Based Permissions
+
+Manage access at capability level:
+
+| Capability | Agent Access | Description |
+|------------|--------------|-------------|
+| `customer_data` | sales, support | Customer information |
+| `financial_ops` | accounting | Financial operations |
+| `dev_tools` | developers | Development tools |
+
+### Permission Inheritance
+
+Agents inherit all tool permissions from assigned capabilities:
+
+```
+Capability: "customer_management"
+  ├─ Tool: "crm_read" (inherited)
+  ├─ Tool: "crm_write" (inherited)
+  └─ Tool: "email_send" (inherited)
+
+Agent: "sales-agent"
+  └─ Gets: crm_read, crm_write, email_send
+```
+
+## Use Cases
+
+### Multi-Team Organizations
+
+```json
+{
+  "teams": {
+    "sales": ["customer_management", "communication"],
+    "support": ["customer_management", "ticketing"],
+    "dev": ["infrastructure", "monitoring"]
+  }
+}
+```
+
+### Environment Separation
+
+```json
+{
+  "environments": {
+    "production": ["prod_database", "prod_apis"],
+    "staging": ["staging_database", "staging_apis"],
+    "dev": ["local_tools", "dev_apis"]
+  }
+}
+```
+
+### Compliance & Security
+
+```json
+{
+  "compliance": {
+    "pii_access": ["legal", "compliance_team"],
+    "financial_data": ["accounting", "audit"],
+    "public_data": ["all_agents"]
+  }
+}
+```
+
+## Best Practices
+
+**Logical Grouping**: Group tools that naturally work together
+**Clear Naming**: Use descriptive capability names
+**Minimal Overlap**: Avoid tool duplication across capabilities
+**Regular Review**: Audit capability assignments periodically
+**Document Purpose**: Explain why capability exists
+
+## Example: E-Commerce Platform
+
+```json
+{
+  "capabilities": [
+    {
+      "name": "order_processing",
+      "tools": ["inventory_check", "payment_gateway", "shipping_api"]
+    },
+    {
+      "name": "customer_service",
+      "tools": ["ticket_system", "email_service", "chat_api"]
+    },
+    {
+      "name": "analytics",
+      "tools": ["database_query", "report_generator", "dashboard_api"]
+    }
+  ],
+  "agents": {
+    "order_bot": ["order_processing"],
+    "support_bot": ["customer_service"],
+    "analytics_bot": ["analytics"]
+  }
+}
+```
+
+## Troubleshooting
+
+**Agent can't access tool:**
+- Verify tool in assigned capability
+- Check capability assigned to agent
+- Confirm tool status is ACTIVE
+
+**Capability not appearing:**
+- Check capability created in correct workspace
+- Verify tools exist before creating capability
+- Refresh dashboard
+
+**Permission denied:**
+- Review capability assignments
+- Check tool-level permissions
+- Verify runtime has tool available
+
+## Next Steps
+
+- [MCP Servers](./mcp-servers) - Configure tools
+- [Tool Overview](./overview) - Understand tool types
+- [Agents](../core-concepts/agents) - Agent configuration

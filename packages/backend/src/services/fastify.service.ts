@@ -1,0 +1,38 @@
+import Fastify, { FastifyInstance } from 'fastify';
+import { inject, injectable } from 'inversify';
+import pino from 'pino';
+import { LoggerService, Service } from '@2ly/common';
+import { SecurityMiddleware } from '../middleware/security.middleware';
+import { RateLimitMiddleware } from '../middleware/rate-limit.middleware';
+
+@injectable()
+export class FastifyService extends Service {
+  private logger: pino.Logger;
+  public readonly fastify: FastifyInstance;
+  constructor(
+    @inject(LoggerService) private loggerService: LoggerService,
+    @inject(SecurityMiddleware) private securityMiddleware: SecurityMiddleware,
+    @inject(RateLimitMiddleware) private rateLimitMiddleware: RateLimitMiddleware,
+  ) {
+    super();
+    this.logger = this.loggerService.getLogger('fastify');
+    this.fastify = Fastify();
+  }
+
+  protected async initialize() {
+    this.logger.info('Starting Fastify server');
+
+    // Register middleware
+    await this.securityMiddleware.register(this.fastify);
+    await this.rateLimitMiddleware.register(this.fastify);
+
+    this.fastify.listen({ port: 3000, host: '0.0.0.0' }, () => {
+      this.logger.info('Server is running on port 3000 🚀');
+    });
+  }
+
+  protected async shutdown() {
+    this.logger.info('Stopping Fastify server');
+    await this.fastify.close();
+  }
+}

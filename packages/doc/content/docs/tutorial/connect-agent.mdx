@@ -1,0 +1,149 @@
+---
+title: "Connect an Agent"
+description: "Connect your AI agent to 2LY with a workflow"
+draft: false
+---
+
+import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
+
+
+Connect your AI agent to 2LY's platform using one of the supported integrations.
+
+## Step 1: Create Your Agent Project
+
+**Important**: Start by creating a new project in your chosen agent framework first.
+
+<Accordions type="single">
+  <Accordion title="LangChain">
+    Create a new Python project and set up your environment:
+
+    ```bash
+    # Create new Python project
+    mkdir my-2ly-agent
+    cd my-2ly-agent
+    python -m venv venv
+    source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+    # Install dependencies
+    pip install twoly langchain langchain-openai python-dotenv
+    ```
+
+    Create your agent file:
+
+    ```python
+    # agent.py
+    from twoly import TwolyMCP
+    from langchain.agents import create_react_agent
+    from langchain_openai import ChatOpenAI
+
+    async def create_agent():
+        async with TwolyMCP("my-agent") as mcp:
+            # Get tools from 2LY
+            tools = await mcp.get_langchain_tools()
+            
+            # Create your agent
+            llm = ChatOpenAI(temperature=0)
+            agent = create_react_agent(llm, tools)
+            
+            return agent
+    ```
+  </Accordion>
+  
+  <Accordion title="N8N">
+    1. **Open N8N**: Navigate to http://localhost:5678
+    2. **Create New Workflow**: Click "New workflow"
+    3. **Add Webhook Node**: 
+       - Drag "Webhook" node to canvas
+       - Set HTTP Method: POST
+       - Copy the webhook URL
+    4. **Add HTTP Request Node**:
+       - Connect to webhook node
+       - Configure for 2LY API calls
+    5. **Add AI Node**: Choose your LLM provider (OpenAI, Claude, etc.)
+    6. **Save Workflow**: Give it a descriptive name
+  </Accordion>
+  
+  <Accordion title="LangFlow">
+    1. **Open LangFlow**: Navigate to http://localhost:7860
+    2. **Create New Flow**: Click "New Flow"
+    3. **Add Components**:
+       - Drag LLM component (OpenAI/Anthropic)
+       - Add HTTP component for 2LY integration
+       - Connect components with flow logic
+    4. **Configure 2LY Connection**:
+       - Set API endpoint to your 2LY instance
+       - Configure authentication if needed
+    5. **Test and Save**: Verify the flow works correctly
+  </Accordion>
+</Accordions>
+
+## Step 2: Connect Agent to 2LY
+
+Once your agent project is created, connect it to 2LY through the web interface.
+
+### Access 2LY Dashboard
+
+1. **Open 2LY**: Navigate to http://localhost:8888
+2. **Go to Agents**: Click on the "Add Agents" section in the navigation
+3. **Select Agents**: Select your framework
+
+### Agent Connection Process
+
+The connection process currently involve a one-time code config in your agent. You can do it directly by copy/paste it:
+
+<Accordions type="single">
+  <Accordion title="LangChain">
+    - When your Python agent runs with `TwolyMCP("my-agent")`, it automatically appears in the 2LY dashboard
+    - No configuration needed in 2LY - the connection is automatic
+    - The agent will show up with the name you specified (e.g., "my-agent")
+  </Accordion>
+  
+  <Accordion title="N8N">
+    - Your N8N workflow connects to 2LY via HTTP requests
+    - The workflow appears when it makes its first API call to 2LY
+    - Connection is established through webhook interactions
+  </Accordion>
+  
+  <Accordion title="LangFlow">
+    - LangFlow connects through API integration
+    - Agent appears when the flow executes and calls 2LY endpoints
+    - Connection is managed through the flow configuration
+  </Accordion>
+</Accordions>
+
+## Step 3: Verify Connection
+
+### Connection Verification
+
+Once your agent is connected, you will see it appear on the right side of the workflow screen.
+
+### Quick Test
+
+Test your agent connection:
+- **LangChain**: Run `python agent.py` locally
+- **N8N**: Trigger your workflow via webhook
+- **LangFlow**: Execute your flow in the interface
+
+### Troubleshooting
+
+If your agent doesn't appear:
+- Ensure your agent code is running
+- Check 2LY is accessible at http://localhost:8888
+- Review agent logs for connection errors
+
+## Next Steps
+
+Your agent is now connected to 2LY! Next steps:
+
+1. **[Connect Tools](/your-first-toolflow/connect-tool)** - Add MCP tools for your agent to use
+2. **[Deploy and Run](/your-first-toolflow/deploy-run)** - Link tools to agents and test execution  
+3. **[Agent Integration Guides](/agent-integrations/langchain)** - Platform-specific documentation
+
+## Key Points to Remember
+
+- **No 2LY Configuration**: Agents connect directly without needing setup in 2LY
+- **Automatic Discovery**: Connected agents appear automatically in the dashboard
+- **Framework Agnostic**: LangChain, N8N, and LangFlow all work the same way
+- **Ready for Tools**: Once connected, agents can access any configured tools
+
+Your agent is ready to start using 2LY's tool ecosystem!

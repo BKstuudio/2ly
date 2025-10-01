@@ -1,0 +1,7 @@
+{
+  "server": {
+    "name": "2ly-nats",
+    "url": "http://localhost:8222"
+  },
+  "hideServerInput": true
+}

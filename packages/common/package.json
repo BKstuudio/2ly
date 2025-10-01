@@ -1,0 +1,23 @@
+{
+  "name": "@2ly/common",
+  "version": "0.0.1",
+  "type": "module",
+  "exports": {
+    "import": {
+      "types": "./dist/index.d.ts",
+      "browser": "./dist/index.browser.js",
+      "default": "./dist/index.js"
+    },
+    "types": "./dist/index.d.ts"
+  },
+  "scripts": {
+    "lint": "eslint \"{src,test}/**/*.{js,ts}\"",
+    "format": "prettier --write \"{src,test}/**/*.*\" && rm -rf node_modules/.cache/prettier",
+    "typecheck": "tsc --noEmit --skipLibCheck",
+    "codegen": "graphql-codegen --config apollo.codegen.ts && graphql-codegen --config dgraph.codegen.ts"
+  },
+  "devDependencies": {
+    "@testcontainers/nats": "^11.5.1"
+  },
+  "overrides": {}
+}

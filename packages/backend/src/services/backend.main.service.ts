@@ -1,0 +1,139 @@
+import { inject, injectable } from 'inversify';
+import { ApolloService } from './apollo.service';
+import pino from 'pino';
+import { RuntimeService } from './runtime.service';
+import { FastifyService } from './fastify.service';
+import { LoggerService, Service } from '@2ly/common';
+import { DGraphService } from './dgraph.service';
+import { container } from '../di/container';
+import { WorkspaceRepository, SystemRepository } from '../repositories';
+import { MCPServerAutoConfigService } from './mcp-auto-config.service';
+import { MonitoringService } from './monitoring.service';
+
+@injectable()
+export class MainService extends Service {
+  private logger: pino.Logger;
+
+  constructor(
+    @inject(LoggerService) private loggerService: LoggerService,
+    @inject(ApolloService) private apolloService: ApolloService,
+    @inject(RuntimeService) private runtimeService: RuntimeService,
+    @inject(FastifyService) private fastifyService: FastifyService,
+    @inject(MCPServerAutoConfigService) private mcpServerAutoConfigService: MCPServerAutoConfigService,
+    @inject(SystemRepository) private systemRepository: SystemRepository,
+    @inject(WorkspaceRepository) private workspaceRepository: WorkspaceRepository,
+    @inject(MonitoringService) private monitoringService: MonitoringService,
+  ) {
+    super();
+    this.logger = this.loggerService.getLogger('main');
+  }
+
+  protected async initialize() {
+    this.logger.info('Starting');
+    await this.runtimeService.start();
+    this.registerHealthCheck();
+    this.registerUtilityEndpoints();
+    await this.apolloService.start();
+    await this.initInstance();
+    await this.mcpServerAutoConfigService.start();
+    await this.monitoringService.start();
+    this.registerGracefulShutdown();
+  }
+
+  protected async shutdown() {
+    this.logger.info('Stopping');
+    await this.runtimeService.stop();
+    await this.apolloService.stop();
+    await this.mcpServerAutoConfigService.stop();
+    await this.monitoringService.stop();
+  }
+
+  private async initInstance() {
+    // find if a workspace already exists
+    this.logger.info('Initializing instance');
+    let system = await this.systemRepository.getSystem();
+    if (!system) {
+      this.logger.info('Creating system');
+      system = await this.systemRepository.createSystem();
+      this.logger.info(`✅ Created system: ${system.instanceId}`);
+    } else {
+      this.logger.info(`✅ Loaded system: ${system.instanceId}`);
+    }
+    const defaultWorkspace = system?.defaultWorkspace;
+    this.logger.info(`Default workspace: ${defaultWorkspace?.name ?? 'not found'}`);
+    if (!defaultWorkspace) {
+      // create a default workspace
+      this.logger.info('Creating default workspace');
+      const newDefaultWorkspace = await this.workspaceRepository.create('Default', system.admins![0].id);
+      await this.systemRepository.setDefaultWorkspace(newDefaultWorkspace.id);
+      this.logger.info('Created default workspace');
+    }
+  }
+
+  private registerHealthCheck() {
+    this.logger.debug('Registering health check endpoint');
+    this.fastifyService.fastify.get('/health', async (req, res) => {
+      try {
+        if (!this.runtimeService.isRunning()) {
+          throw new Error('Runtime is not running');
+        }
+        if (!this.apolloService.isRunning()) {
+          throw new Error('Apollo is not running');
+        }
+        res.status(200).send('OK');
+      } catch (error) {
+        this.logger.error(`Error during health check: ${error}`);
+        res.status(503).send('Service not running');
+      }
+    });
+  }
+
+  private registerUtilityEndpoints() {
+    this.logger.debug('Registering utility endpoints');
+    this.fastifyService.fastify.get('/reset', async (req, res) => {
+      this.logger.info('Resetting all data');
+      const dgraphService = container.get(DGraphService) as DGraphService;
+      try {
+        await dgraphService.dropAll();
+        await dgraphService.initSchema(true);
+        await this.initInstance();
+        res.send({ response: 'OK' });
+      } catch (error) {
+        this.logger.error(`🔴 Error during reset: ${error}`);
+        res.status(500).send('Error during reset');
+      }
+    });
+  }
+
+  private isShuttingDown = false;
+  private registerGracefulShutdown() {
+    process.on('SIGINT', () => this.gracefulShutdown('SIGINT'));
+    process.on('SIGTERM', () => this.gracefulShutdown('SIGTERM'));
+    process.on('uncaughtException', (error: Error) => {
+      this.logger.error('Uncaught exception');
+      console.error(error);
+      this.gracefulShutdown('uncaughtException');
+    });
+    process.on('unhandledRejection', (error) => {
+      this.logger.error('Unhandled rejection');
+      console.error(error);
+      this.gracefulShutdown('unhandledRejection');
+    });
+  }
+
+  private async gracefulShutdown(signal: string) {
+    if (this.isShuttingDown) {
+      this.logger.info(`Already shutting down, ignoring signal: ${signal}`);
+      return;
+    }
+    this.logger.info(`Shutting down: ${signal}`);
+    this.isShuttingDown = true;
+    const keepAlive = setInterval(() => {
+      console.log('processing shutdown...');
+    }, 1000);
+    this.logger.info(`Graceful shutdown: ${signal}`);
+    await this.stop();
+    clearInterval(keepAlive);
+    process.exit(0);
+  }
+}

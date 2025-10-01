@@ -1,0 +1,122 @@
+---
+title: "Development Guide"
+description: "Development practices and patterns"
+draft: false
+---
+
+Development practices for contributing to 2LY.
+
+## Code Style
+
+### TypeScript
+- Use strict mode
+- Explicit return types
+- Prefer interfaces over types
+- Use const for immutable values
+
+### Formatting
+```bash
+npm run lint
+npm run format
+```
+
+## Architecture Patterns
+
+### Service Pattern
+Services handle business logic:
+```typescript
+@injectable()
+export class RuntimeService {
+  async createRuntime(data: RuntimeInput): Promise<Runtime> {
+    // Business logic here
+  }
+}
+```
+
+### Repository Pattern
+Repositories handle data access:
+```typescript
+@injectable()
+export class RuntimeRepository {
+  async findById(id: string): Promise<Runtime | null> {
+    // Data access here
+  }
+}
+```
+
+### Dependency Injection
+Use Inversify for DI:
+```typescript
+container.bind<RuntimeService>(TYPES.RuntimeService)
+  .to(RuntimeService)
+  .inSingletonScope();
+```
+
+## Testing
+
+### Unit Tests
+```typescript
+describe('RuntimeService', () => {
+  it('should create runtime', async () => {
+    // Test implementation
+  });
+});
+```
+
+### Integration Tests
+Test component integration, mock external services.
+
+### Running Tests
+```bash
+npm run test
+npm run test:watch
+npm run test:coverage
+```
+
+## Adding Features
+
+### 1. Plan
+- Create GitHub issue
+- Discuss approach
+- Get feedback
+
+### 2. Implement
+- Create feature branch
+- Write tests first (TDD)
+- Implement feature
+- Update docs
+
+### 3. Submit
+- Create pull request
+- Address review feedback
+- Merge when approved
+
+## Common Tasks
+
+### Adding NATS Message
+1. Create message class in `packages/common/src/messages/`
+2. Implement `serialize()` and `deserialize()`
+3. Register in message registry
+4. Add handler in backend/runtime
+
+### Adding GraphQL Resolver
+1. Update schema in `packages/common/schema/apollo.schema.graphql`
+2. Generate types: `npm run generate`
+3. Implement resolver in `packages/backend/src/database/resolvers.ts`
+4. Add tests
+
+### Adding Frontend Component
+1. Create in `packages/frontend/src/components/`
+2. Use Tailwind for styling
+3. Follow existing patterns
+4. Add to Storybook if reusable
+
+## Best Practices
+
+- **Keep it simple**: Solve the problem, nothing more
+- **Write tests**: Test before implementation
+- **Document**: Code comments and README updates
+- **Small PRs**: Easier to review and merge
+- **Ask questions**: Better to ask than assume
+
+See [Development Setup](./development-setup) for environment details.

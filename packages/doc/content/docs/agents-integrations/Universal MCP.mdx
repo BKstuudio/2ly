@@ -1,0 +1,203 @@
+---
+title: "Universal MCP Connector"
+description: "Build custom agent adapters"
+draft: false
+---
+
+Build custom adapters to integrate specialized AI frameworks or proprietary models with 2LY.
+
+## Use Cases
+
+- Integrate proprietary AI models
+- Connect specialized frameworks not natively supported
+- Implement custom agent logic
+- Bridge legacy systems
+- Create domain-specific interfaces
+
+## MCP Protocol
+
+Any agent that implements MCP protocol can connect to 2LY:
+
+**MCP Client Requirements:**
+- Implement `initialize` handshake
+- Support `tools/list` to discover tools
+- Support `tools/call` to execute tools
+- Handle tool results
+
+**Transport Options:**
+- **STDIO**: Subprocess communication (most common)
+- **HTTP**: RESTful endpoints
+- **WebSocket**: Real-time bidirectional
+
+## Quick Implementation
+
+### 1. STDIO MCP Client (Recommended)
+
+Configure in Claude Desktop or similar:
+
+```json
+{
+  "mcpServers": {
+    "2ly": {
+      "command": "npx",
+      "args": ["@2ly/runtime"],
+      "env": {
+        "RUNTIME_NAME": "my-agent",
+        "WORKSPACE_ID": "my-workspace"
+      }
+    }
+  }
+}
+```
+
+### 2. Python MCP Client
+
+Use Python SDK for custom implementation:
+
+```python
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
+
+async def connect_to_2ly():
+    server_params = StdioServerParameters(
+        command="npx",
+        args=["@2ly/runtime"],
+        env={"RUNTIME_NAME": "my-agent"}
+    )
+
+    async with stdio_client(server_params) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+
+            # List tools
+            tools = await session.list_tools()
+
+            # Call tool
+            result = await session.call_tool("filesystem_read", {
+                "path": "/tmp/file.txt"
+            })
+```
+
+
+## Custom Framework Integration
+
+### Framework Adapter Pattern
+
+```typescript
+class CustomFrameworkAdapter {
+  private mcpClient: Client;
+
+  async initialize() {
+    // Setup MCP connection
+    this.mcpClient = await this.connectToRuntime();
+
+    // Get available tools
+    const tools = await this.mcpClient.listTools();
+
+    // Register tools with your framework
+    await this.registerTools(tools);
+  }
+
+  async executeAgentTask(task: string) {
+    // Your framework's agent logic
+    const toolName = this.determineToolToUse(task);
+    const args = this.extractArguments(task);
+
+    // Execute via MCP
+    const result = await this.mcpClient.callTool({
+      name: toolName,
+      arguments: args
+    });
+
+    return result;
+  }
+}
+```
+
+## Configuration
+
+### Runtime Environment Variables
+
+Set when starting `@2ly/runtime`:
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `RUNTIME_NAME` | ✓ | Unique agent identifier |
+| `WORKSPACE_ID` | - | Workspace to connect to (default: DEFAULT) |
+| `NATS_SERVERS` | - | NATS server URL (default: localhost:4222) |
+| `AGENT_SERVER_TRANSPORT` | - | MCP transport (stdio/stream/sse) |
+
+### Example Configurations
+
+**Claude Desktop:**
+```json
+{
+  "mcpServers": {
+    "2ly": {
+      "command": "npx",
+      "args": ["@2ly/runtime"],
+      "env": {
+        "RUNTIME_NAME": "claude-desktop",
+        "WORKSPACE_ID": "team-workspace"
+      }
+    }
+  }
+}
+```
+
+**Custom Agent:**
+```bash
+RUNTIME_NAME=my-agent \
+WORKSPACE_ID=my-workspace \
+NATS_SERVERS=nats://prod:4222 \
+npx @2ly/runtime
+```
+
+## Testing Your Integration
+
+### 1. Verify Connection
+
+Check runtime appears in 2LY dashboard at http://localhost:8888
+
+### 2. Test Tool Discovery
+
+```python
+async with TwolyMCP("test-agent") as mcp:
+    tools = await mcp.list_tools()
+    print(f"Found {len(tools)} tools")
+```
+
+### 3. Test Tool Execution
+
+```python
+result = await mcp.call_tool("filesystem_list", {
+    "path": "/tmp"
+})
+print(result)
+```
+
+## Troubleshooting
+
+**Runtime won't start:**
+- Verify Node.js installed: `node --version`
+- Test runtime manually: `npx @2ly/runtime`
+
+**No tools available:**
+- Check tools configured in workspace
+- Verify WORKSPACE_ID matches dashboard
+
+**Connection timeout:**
+- Check NATS server running
+- Verify NATS_SERVERS URL correct
+- Check network/firewall settings
+
+**Tool execution fails:**
+- Verify tool arguments match schema
+- Check tool permissions in dashboard
+- Review runtime logs
+
+## Next Steps
+
+- [Python SDK](../sdk/python-overview) - Pre-built Python integration
+- [LangChain Integration](./langchain) - LangChain-specific guide
+- [MCP Protocol Docs](https://modelcontextprotocol.io/) - Official MCP spec

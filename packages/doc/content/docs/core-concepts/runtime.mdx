@@ -1,0 +1,42 @@
+---
+title: "Runtime"
+description: "Understanding the distributed runtime"
+draft: false
+---
+
+Runtime is the distributed execution environment where tool and agents run. Deploy anywhere: local, cloud, or edge.
+
+## What is Runtime?
+
+A runtime is a Node.js process that connects to the 2LY backend via NATS messaging. It handles tool discovery, request routing, and execution lifecycle. Each runtime registers services and subscribes to specific message channels for coordinating agent-tool interactions.
+
+## Runtime Types
+
+A runtime can be tagged as either an **agent runtime** (connects agents to the platform) or a **tool runtime** (executes configured tools). Both types run the same executable but serve different roles in the architecture.
+
+## Deployment Options
+
+By default, all runtimes are hosted in an embedded Main Runtime. The distributed node approach allows for deployment versatility across local, cloud, and edge environments.
+
+See [Advanced Deployment](/guides/deployment/runon-types) for distributed configuration options.
+
+## How it Works
+
+1. Runtime starts and authenticates with backend
+2. Registers capabilities and subscribes to NATS channels
+3. Receives tool requests from agents via message bus
+4. Executes tools in isolated environment
+5. Returns results through NATS back to requesting agent
+
+## Benefits
+
+- **Distributed**: Run tools anywhere they're needed
+- **Scalable**: Add instances without changing code
+- **Resilient**: Automatic retries and fault tolerance
+- **Flexible**: Deploy containers, VMs, or serverless
+
+## Next Steps
+
+- [Deploy Runtime](/your-first-toolflow/deploy-run) - Get started
+- [Agents](/core-concepts/agents) - How agents connect
+- [Tools](/core-concepts/tools) - Add tools to runtime

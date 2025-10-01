@@ -1,0 +1,38 @@
+---
+title: "Agents"
+description: "Understanding agents in 2LY"
+draft: false
+---
+
+Agents are AI systems composed of an LLM, prompts, and tools. 2LY decouples tools from agent logic through a gateway runtime, enabling centralized governance and scalable tool management across all agents.
+
+## What are Agents?
+
+Traditional agents bundle three components:
+- **LLM**: Language model for reasoning (GPT-4, Claude, Llama)
+- **Prompts**: Instructions defining agent behavior
+- **Tools**: Functions for external actions (APIs, databases, files)
+
+2LY separates the tool layer from agent frameworks. Instead of integrating tools directly into each agent, agents connect as MCP clients to a runtime that manages tool access, authentication, and execution centrally. This architecture allows you to configure tools once and use them across any agent framework.
+
+
+## How Agents Work
+
+1. Runtime starts and registers with backend via NATS
+2. Backend sends available tools to runtime
+3. Agent lists tools from runtime
+4. Agent calls tool → routed via NATS → executes → returns result
+
+
+## Benefits
+
+- **Dynamic Discovery**: Add/remove tools without changing agent code
+- **Centralized Config**: Manage tools in dashboard, not in code
+- **Distributed**: Access tools anywhere (local, cloud, edge)
+- **Framework Agnostic**: Works with any MCP-compatible framework
+
+## Next Steps
+
+- [Connect Agent](/your-first-toolflow/connect-agent) - Step-by-step guide
+- [Tools](/core-concepts/tools) - What tools can do
+- [Runtime](/core-concepts/runtime) - How tools execute

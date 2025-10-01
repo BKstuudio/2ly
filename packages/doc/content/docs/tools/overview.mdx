@@ -1,0 +1,98 @@
+---
+title: "Tools Overview"
+description: "Centralized tool registry and runtime management for AI agents"
+draft: false
+---
+
+
+2LY provides a centralized tool registry for managing AI agent capabilities at scale. Tools are configured, deployed, and orchestrated through a unified platform that abstracts away infrastructure complexity.
+
+## What are Tools?
+
+**Tools are executable services** deployed in 2LY runtimes that agents can invoke via MCP protocol:
+
+- **Configured Services**: Pre-deployed with authentication and parameters
+- **Runtime Deployed**: Running in managed execution environments
+- **MCP Compatible**: Accessible through standardized protocol interfaces
+- **Registry Managed**: Centrally tracked and monitored  
+
+## Tool Types
+
+2LY supports three tool implementation patterns:
+
+1. MCP Servers
+Standardized servers implementing Model Context Protocol for consistent tool interfaces.
+
+2. API Integrations (coming soon)  
+HTTP API endpoints wrapped with authentication and request/response mapping.
+
+3. Coded Functions (coming soon)
+Custom JavaScript/Python functions executed in managed runtime environments.
+
+## Tool Registry
+
+### Centralized Management
+The tool registry provides:
+- Real-time deployment status and health monitoring
+- Access control and agent binding configuration
+- Resource allocation and scaling controls
+
+### Platform Independence
+Tools operate independently of external dependencies:
+- Source-agnostic deployment and execution
+- Consistent API interfaces across tool types
+- Self-contained configuration and state management
+- Isolated runtime environments
+
+## Management Interface
+
+### Registry View
+The tool registry displays:
+- Tool metadata, type, and runtime information
+- Deployment status and health indicators
+- Agent bindings and execution metrics
+- Administrative actions for configuration and deployment
+
+### Tool Operations
+Management features include:
+- **Configuration**: Runtime parameters and authentication
+- **Testing**: Endpoint validation and parameter testing
+- **Monitoring**: Execution metrics and performance data
+- **Deployment**: Runtime targeting and resource allocation
+
+## Deployment Architecture
+
+2LY tools are **pre-deployed services** in managed runtimes:
+- Configured with authentication credentials and parameters
+- Validated through automated testing pipelines
+- Deployed to isolated execution environments
+- Monitored for availability and performance
+
+Agents access tools through MCP protocol with standardized interfaces and automatic service discovery.
+
+## System Benefits
+
+**Infrastructure Management:**
+- Unified control plane for tool deployment and orchestration
+- Automated scaling across Local Docker, Remote, and Edge runtimes
+- Centralized monitoring and performance tracking
+
+**Development Workflow:**
+- Service discovery through MCP protocol
+- Zero-configuration tool access for agents
+- Abstracted runtime complexity
+
+**Operational Efficiency:**
+- Centralized governance and access control
+- Resource optimization and cost tracking
+- Scalable tool registry management
+
+
+## Implementation Details
+
+- **[MCP Servers](/tools/mcp-servers)** - Model Context Protocol server deployment
+- **[API REST](/tools/api-rest)** - HTTP API endpoint configuration
+- **[Coded Function](/tools/coded-function)** - Custom function runtime execution
+- **[Capabilities](/tools/capabilities)** - Tool composition and grouping
+
+The 2LY tool registry provides enterprise-grade tool management with automated deployment and centralized orchestration.

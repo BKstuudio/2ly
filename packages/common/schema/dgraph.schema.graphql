@@ -1,0 +1,142 @@
+scalar DateTime
+
+enum ActiveStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum MCPTransportType {
+  STDIO
+  STREAM
+}
+
+enum MCPServerRunOn {
+  GLOBAL
+  AGENT
+  EDGE
+}
+
+type System {
+  id: ID!
+  initialized: Boolean!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  instanceId: String!
+  workspaces: [Workspace!] @hasInverse(field: system)
+  defaultWorkspace: Workspace
+  admins: [User!]
+}
+
+type Workspace @withSubscription {
+  id: ID!
+  name: String! @search(by: [hash])
+  createdAt: DateTime!
+  mcpServers: [MCPServer!] @hasInverse(field: workspace)
+  mcpTools: [MCPTool!] @hasInverse(field: workspace)
+  runtimes: [Runtime!] @hasInverse(field: workspace)
+  admins: [User!] @hasInverse(field: adminOfWorkspaces)
+  users: [User!] @hasInverse(field: membersOfWorkspaces)
+  system: System! @hasInverse(field: workspaces)
+  globalRuntime: Runtime
+  defaultTestingRuntime: Runtime
+}
+
+type MCPServer @withSubscription {
+  id: ID!
+  name: String! @search(by: [hash])
+  description: String!
+  repositoryUrl: String!
+  transport: MCPTransportType!
+  command: String!
+  args: String!
+  ENV: String!
+  serverUrl: String!
+  headers: String
+  tools: [MCPTool!] @hasInverse(field: mcpServer)
+  runOn: MCPServerRunOn @search
+  # an MCP server can run either on a specific runtime - or if no value is provided it will be launch on the agent runtime which requires the capability
+  runtime: Runtime @hasInverse(field: mcpServers)
+  workspace: Workspace! @hasInverse(field: mcpServers)
+}
+
+type MCPTool @withSubscription {
+  id: ID!
+  name: String! @search(by: [hash])
+  description: String!
+  inputSchema: String!
+  annotations: String!
+  status: ActiveStatus! @search
+  createdAt: DateTime!
+  lastSeenAt: DateTime!
+  mcpServer: MCPServer! @hasInverse(field: tools)
+  runtimes: [Runtime!] @hasInverse(field: mcpToolCapabilities)
+  workspace: Workspace! @hasInverse(field: mcpTools)
+  toolCalls: [ToolCall!] @hasInverse(field: mcpTool)
+}
+
+type Runtime @withSubscription {
+  id: ID!
+  name: String! @search(by: [hash])
+  description: String
+  status: ActiveStatus! @search
+  roots: String
+  createdAt: DateTime!
+  processId: String
+  hostIP: String
+  hostname: String
+  mcpClientName: String
+  lastSeenAt: DateTime
+  capabilities: [String!]
+  mcpToolCapabilities: [MCPTool!] @hasInverse(field: runtimes)
+  mcpServers: [MCPServer!] @hasInverse(field: runtime)
+  workspace: Workspace! @hasInverse(field: runtimes)
+  toolCalls: [ToolCall!] @hasInverse(field: calledBy)
+  toolResponses: [ToolCall!] @hasInverse(field: executedBy)
+}
+
+type User @withSubscription {
+  id: ID!
+  email: String! @search(by: [hash])
+  password: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  lastLoginAt: DateTime
+  failedLoginAttempts: Int
+  lockedUntil: DateTime
+  adminOfWorkspaces: [Workspace!] @hasInverse(field: admins)
+  membersOfWorkspaces: [Workspace!] @hasInverse(field: users)
+  sessions: [Session!] @hasInverse(field: user)
+}
+
+type Session @withSubscription {
+  id: ID!
+  refreshToken: String! @search(by: [hash])
+  userId: String! @search(by: [hash])
+  user: User! @hasInverse(field: sessions)
+  deviceInfo: String
+  ipAddress: String
+  userAgent: String
+  createdAt: DateTime!
+  expiresAt: DateTime! @search
+  lastUsedAt: DateTime
+  isActive: Boolean! @search
+}
+
+enum ToolCallStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+type ToolCall {
+  id: ID!
+  toolInput: String!
+  calledAt: DateTime!
+  completedAt: DateTime
+  status: ToolCallStatus!
+  toolOutput: String
+  error: String
+  mcpTool: MCPTool! @hasInverse(field: toolCalls)
+  calledBy: Runtime! @hasInverse(field: toolCalls)
+  executedBy: Runtime @hasInverse(field: toolResponses)
+}

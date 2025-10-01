@@ -1,0 +1,57 @@
+{
+  "name": "@2ly/backend",
+  "version": "0.0.1",
+  "description": "",
+  "author": "",
+  "license": "See license in LICENSE.txt",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "dist/index.js",
+  "bin": {
+    "virtual-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "LICENSE.txt"
+  ],
+  "scripts": {
+    "build": "tsx tooling/esbuild.build.ts",
+    "dev": "tsx tooling/esbuild.watch.ts",
+    "start": "node dist/index.js",
+    "debug": "tsx --inspect-brk src/index.ts",
+    "lint": "eslint \"{src,test}/**/*.{js,ts}\"",
+    "format": "prettier --write \"{src,test}/**/*.*\" && rm -rf node_modules/.cache/prettier",
+    "typecheck": "tsc --noEmit --skipLibCheck",
+    "generate-jwt-keys": "tsx scripts/generate-jwt-keys.ts"
+  },
+  "dependencies": {
+    "@apollo/server": "^4.12.2",
+    "@azure-rest/ai-inference": "^1.0.0-beta.6",
+    "@azure/core-auth": "^1.10.0",
+    "@fastify/cors": "^11.0.1",
+    "@fastify/helmet": "^13.0.1",
+    "@fastify/rate-limit": "^10.3.0",
+    "@grpc/grpc-js": "^1.13.4",
+    "@nitra/as-integrations-fastify": "^3.0.2",
+    "bcryptjs": "^3.0.2",
+    "dotenv": "^16.5.0",
+    "fastify": "^5.3.3",
+    "graphql-subscriptions": "^3.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "pino": "^9.7.0",
+    "subscriptions-transport-ws": "^0.11.0",
+    "urql": "^4.2.2",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/google-protobuf": "^3.15.12",
+    "@types/json-schema": "^7.0.15",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^22.13.5",
+    "@types/protobufjs": "^6.0.0"
+  }
+}

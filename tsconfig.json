@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "module": "esnext",
+    "target": "esnext",
+    "strict": true,
+    "jsx": "preserve",
+    "isolatedModules": true,
+    "moduleResolution": "bundler",
+    "customConditions": [
+      "source"
+    ],
+    "experimentalDecorators": true,
+    "useDefineForClassFields": false,
+    "paths": {
+      "@2ly/frontend": [
+        "packages/frontend/src"
+      ],
+      "@2ly/backend": [
+        "packages/backend/src"
+      ],
+      "@2ly/runtime": [
+        "packages/runtime/src"
+      ],
+      "@2ly/common": [
+        "packages/common/src"
+      ]
+    }
+  },
+  "include": [
+    "packages/**/*.ts"
+  ]
+}

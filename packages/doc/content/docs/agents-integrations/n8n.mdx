@@ -1,0 +1,108 @@
+---
+title: "n8n"
+description: "Connect n8n workflows to 2LY"
+draft: false
+---
+
+n8n workflows connect to 2LY through the **MCP Client Tool** node, providing access to your configured tools via the MCP protocol.
+
+## Overview
+
+Integration uses n8n's MCP Client Tool node to:
+- Discover and load tools from 2LY runtime
+- Execute tool calls through MCP protocol
+- Handle authentication and routing automatically
+
+## Quick Start
+
+### Prerequisites
+
+```bash
+# Ensure 2LY is running
+npm run start
+
+# n8n installed and running
+# Visit http://localhost:5678
+```
+
+### Add MCP Client Tool Node
+
+1. Open your n8n workflow
+2. Add **MCP Client Tool** node from the sidebar
+3. Configure the MCP server:
+
+```json
+{
+  "type": "mcp",
+  "server": "http://localhost:7801",
+  "runtime": "@2ly/runtime"
+}
+```
+
+4. Connect the MCP node to your workflow components
+
+## Basic Workflow
+
+```
+Trigger → MCP Client Tool → Process Data → Output
+```
+
+The MCP Client Tool node discovers all tools from your 2LY workspace and makes them available within the workflow.
+
+## Configuration
+
+### MCP Server Settings
+
+- **Type**: Must be "mcp"
+- **Server URL**: Your 2LY MCP endpoint (default: `http://localhost:7801`)
+- **Runtime**: Package name `@2ly/runtime`
+
+### Environment Variables
+
+```bash
+export NATS_SERVERS="nats://localhost:4222"
+export WORKSPACE_ID="my-workspace"
+```
+
+## Example Workflow
+
+### Automated File Processing
+
+```
+Schedule Trigger → MCP: read_file →
+Process Content → MCP: write_file →
+Send Notification
+```
+
+1. **Schedule Trigger**: Run workflow on schedule
+2. **MCP: read_file**: Read file using 2LY filesystem tool
+3. **Process Content**: Transform or analyze data
+4. **MCP: write_file**: Save results using 2LY filesystem tool
+5. **Send Notification**: Alert via email/Slack
+
+## Troubleshooting
+
+**MCP Connection Failed**
+```bash
+# Verify 2LY services
+docker-compose ps
+
+# Check runtime endpoint
+curl http://localhost:7801/health
+```
+
+**Tools Not Loading**
+- Verify server URL in MCP Client Tool node
+- Check tools are configured in 2LY dashboard
+- Ensure 2LY runtime is connected
+
+**Workflow Execution Issues**
+- Check n8n execution logs
+- Verify tool permissions in 2LY dashboard
+- Test tools individually in 2LY playground
+
+## Next Steps
+
+- [Tool Configuration](/tools/mcp-servers) - Add tools to workspace
+- [Capabilities](/tools/capabilities) - Group and manage tools
+- [Universal MCP](/agents-integrations/Universal%20MCP) - Custom adapter guide

@@ -1,0 +1,444 @@
+---
+title: "Monitoring & Observability"
+description: "Monitor 2LY platform health and performance"
+draft: true
+---
+
+Effective monitoring ensures your 2LY deployment runs smoothly. This guide covers key metrics, health checks, and troubleshooting approaches.
+
+## Key Metrics
+
+### Runtime Health
+
+**Status:**
+- ACTIVE: Runtime is healthy and connected
+- INACTIVE: Runtime disconnected or heartbeat expired (>30s)
+
+**Metrics to Monitor:**
+```
+- Runtime count (active vs total)
+- Last seen timestamp (should be <30s ago)
+- Heartbeat failures
+- Connection errors
+```
+
+**Query via GraphQL:**
+```graphql
+query {
+  workspace {
+    runtimes {
+      name
+      status
+      lastSeenAt
+      capabilities
+    }
+  }
+}
+```
+
+**Alert When:**
+- Critical runtime becomes INACTIVE
+- Global runtime disconnects
+- Agent runtime count drops unexpectedly
+
+### Tool Availability
+
+**Status:**
+- ACTIVE: Tool discovered and available
+- INACTIVE: Tool not seen recently
+
+**Metrics to Monitor:**
+```
+- Tool count (active vs total)
+- Tool discovery latency
+- Tool execution success rate
+- Failed tool calls
+```
+
+**Query via GraphQL:**
+```graphql
+query {
+  workspaceMCPTools(workspaceId: "...") {
+    mcpTools {
+      name
+      status
+      lastSeenAt
+      mcpServer { name }
+    }
+  }
+}
+```
+
+**Alert When:**
+- Critical tools become INACTIVE
+- Tool count drops significantly
+- High tool execution failure rate
+
+### Tool Execution Performance
+
+**Metrics to Monitor:**
+```
+- Tool call latency (p50, p95, p99)
+- Tool execution success rate
+- Tool timeout rate
+- Messages in NATS queue
+```
+
+**Expected Latencies:**
+- Routing overhead: ~10-20ms
+- GLOBAL tools: +50-200ms
+- EDGE tools: +50-500ms (network dependent)
+- Tool execution: Varies by tool
+
+**Alert When:**
+- P95 latency > 5 seconds
+- Success rate < 95%
+- Timeout rate > 5%
+
+### Backend Performance
+
+**Metrics to Monitor:**
+```
+- GraphQL query latency
+- GraphQL mutation latency
+- Database query time
+- NATS message throughput
+- Error rates
+```
+
+**Health Check:**
+```bash
+curl http://localhost:3000/health
+# Should return 200 OK
+```
+
+**Alert When:**
+- Health check fails
+- Query latency > 1s
+- Error rate > 1%
+
+### NATS Message Bus
+
+**Metrics to Monitor:**
+```
+- Message rate (msgs/sec)
+- Message latency
+- JetStream persistence lag
+- KV store operations
+- Connection count
+```
+
+**NATS Monitoring:**
+```bash
+# NATS provides monitoring endpoint
+curl http://localhost:8222/varz
+curl http://localhost:8222/connz
+```
+
+**Alert When:**
+- Message latency > 100ms
+- JetStream lag increasing
+- Connection failures
+
+### DGraph Database
+
+**Metrics to Monitor:**
+```
+- Query latency
+- Database size
+- Transaction rate
+- Connection pool usage
+```
+
+**Health Check:**
+```bash
+curl http://localhost:8080/health
+# Should return 200 OK
+```
+
+**Alert When:**
+- Query latency > 500ms
+- Database size growing unexpectedly
+- Connection pool exhausted
+
+## Monitoring Setup
+
+### GraphQL Subscriptions
+
+Real-time monitoring via subscriptions:
+
+```javascript
+// Subscribe to runtime status
+const subscription = client.subscribe({
+  query: gql`
+    subscription {
+      runtimes(workspaceId: $workspaceId) {
+        id
+        name
+        status
+        lastSeenAt
+      }
+    }
+  `
+});
+
+subscription.subscribe({
+  next: ({ data }) => {
+    // Update dashboard
+    const inactiveRuntimes = data.runtimes.filter(
+      r => r.status === 'INACTIVE'
+    );
+    if (inactiveRuntimes.length > 0) {
+      alertRuntimeDown(inactiveRuntimes);
+    }
+  }
+});
+```
+
+### Health Check Script
+
+Simple health check for monitoring systems:
+
+```bash
+#!/bin/bash
+
+# Check backend
+if ! curl -sf http://localhost:3000/health > /dev/null; then
+  echo "Backend DOWN"
+  exit 1
+fi
+
+# Check NATS
+if ! curl -sf http://localhost:8222/healthz > /dev/null; then
+  echo "NATS DOWN"
+  exit 1
+fi
+
+# Check DGraph
+if ! curl -sf http://localhost:8080/health > /dev/null; then
+  echo "DGraph DOWN"
+  exit 1
+fi
+
+# Check runtime heartbeats (via GraphQL)
+INACTIVE=$(curl -s http://localhost:3000/graphql \
+  -H "Content-Type: application/json" \
+  -d '{"query":"{ workspace { runtimes { status } } }"}' \
+  | jq '[.data.workspace.runtimes[] | select(.status=="INACTIVE")] | length')
+
+if [ "$INACTIVE" -gt 0 ]; then
+  echo "Found $INACTIVE inactive runtimes"
+  exit 1
+fi
+
+echo "All systems healthy"
+exit 0
+```
+
+### Log Monitoring
+
+**Backend Logs:**
+```bash
+# Docker logs
+docker logs 2ly-backend --tail 100 -f
+
+# Look for errors
+docker logs 2ly-backend 2>&1 | grep ERROR
+```
+
+**Runtime Logs:**
+```bash
+# If running in Docker
+docker logs 2ly-main-runtime --tail 100 -f
+
+# If running via npx
+# Check stdout/stderr where runtime was started
+```
+
+**Key Log Patterns:**
+- `RuntimeConnectMessage` - Runtime registration
+- `AgentCallMCPToolMessage` - Tool execution requests
+- `ERROR` - Errors and failures
+- `HeartbeatMessage` - Runtime keepalive
+
+### Prometheus Integration (Future)
+
+2LY does not currently export Prometheus metrics, but planned implementation:
+
+```typescript
+// Future: Prometheus metrics endpoint
+app.get('/metrics', async (req, res) => {
+  const metrics = {
+    runtime_count: await getRuntimeCount(),
+    tool_count: await getToolCount(),
+    tool_execution_total: toolExecutionCounter,
+    tool_execution_duration: toolExecutionHistogram,
+  };
+  res.send(formatPrometheusMetrics(metrics));
+});
+```
+
+## Common Monitoring Scenarios
+
+### Scenario 1: Runtime Disconnected
+
+**Symptom:** Runtime shows INACTIVE in dashboard
+
+**Check:**
+1. Is runtime process still running?
+   ```bash
+   ps aux | grep @2ly/runtime
+   ```
+
+2. Check runtime logs for errors
+
+3. Verify NATS connectivity:
+   ```bash
+   telnet nats-host 4222
+   ```
+
+4. Check NATS KV for heartbeat:
+   ```bash
+   nats kv get heartbeat {RID}
+   ```
+
+**Resolution:**
+- Restart runtime if crashed
+- Fix network connectivity to NATS
+- Check NATS server health
+
+### Scenario 2: Tools Not Available
+
+**Symptom:** Tools show INACTIVE or missing
+
+**Check:**
+1. Is MCP server configured correctly?
+   ```graphql
+   query {
+     mcpServers {
+       name
+       command
+       args
+       runOn
+     }
+   }
+   ```
+
+2. Check runtime logs for MCP server spawn errors
+
+3. Test MCP server manually:
+   ```bash
+   npx @modelcontextprotocol/server-filesystem /tmp
+   ```
+
+4. Verify tool runtime is ACTIVE
+
+**Resolution:**
+- Fix MCP server configuration
+- Restart runtime to respawn servers
+- Check MCP server dependencies installed
+
+### Scenario 3: Slow Tool Execution
+
+**Symptom:** Tool calls taking longer than expected
+
+**Check:**
+1. Check NATS message latency:
+   ```bash
+   nats server info
+   ```
+
+2. Check which runtime executed tool (logs)
+
+3. Verify runOn configuration (GLOBAL vs EDGE)
+
+4. Check network latency to tool runtime
+
+**Resolution:**
+- Optimize runOn type (use AGENT for low latency)
+- Move tools closer to agents
+- Check tool implementation performance
+- Scale runtime instances
+
+### Scenario 4: High Error Rate
+
+**Symptom:** Many tool execution failures
+
+**Check:**
+1. Query recent tool calls (if logged)
+
+2. Check backend error logs:
+   ```bash
+   docker logs 2ly-backend 2>&1 | grep ERROR
+   ```
+
+3. Check runtime error logs
+
+4. Verify tool inputSchema matches calls
+
+**Resolution:**
+- Fix invalid tool arguments
+- Update tool configuration
+- Restart failed MCP servers
+- Check tool server implementation
+
+## Best Practices
+
+**Set Up Alerts:**
+- Runtime health (critical runtimes)
+- Tool availability (critical tools)
+- Backend health checks
+- Database health checks
+
+**Regular Health Checks:**
+- Run health check script every 1-5 minutes
+- Monitor GraphQL subscriptions
+- Review logs daily
+
+**Capacity Planning:**
+- Monitor runtime count growth
+- Track tool execution volume
+- Plan for MCP server limits (~10-20 per runtime)
+
+**Incident Response:**
+- Define critical vs non-critical runtimes
+- Document recovery procedures
+- Keep runtime configurations backed up
+
+**Dashboard Review:**
+- Check runtime status daily
+- Review tool availability weekly
+- Monitor execution patterns
+
+## Troubleshooting Tools
+
+**GraphQL Playground:**
+```bash
+# Access at http://localhost:3000/graphql
+# Run queries and subscriptions interactively
+```
+
+**NATS CLI:**
+```bash
+# Install
+brew install nats-io/nats-tools/nats
+
+# Monitor subjects
+nats sub ">"
+
+# Check KV stores
+nats kv ls
+nats kv get heartbeat
+```
+
+**DGraph Ratel (UI):**
+```bash
+# Access at http://localhost:8000
+# Query database directly
+```
+
+## Next Steps
+
+- [Security Guide](/runtime-deployment/security-guide) - Secure your deployment
+- [Runtime Deployment](/runtime-deployment/runtime) - Deploy and configure runtimes
+- [Architecture Overview](/technical-concepts/architecture-overview) - Understand system boundaries

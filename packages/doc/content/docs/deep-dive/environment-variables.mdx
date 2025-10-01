@@ -1,0 +1,274 @@
+---
+title: "Environment Variables"
+description: "Complete reference for 2LY environment variables"
+draft: true
+---
+
+Complete reference for configuring 2LY components via environment variables.
+
+## Runtime Variables
+
+Configure `@2ly/runtime` behavior:
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `RUNTIME_NAME` | ✓ | - | Unique runtime identifier |
+| `WORKSPACE_ID` | - | DEFAULT | Workspace to connect to |
+| `NATS_SERVERS` | - | nats://localhost:4222 | NATS server URL(s) |
+| `AGENT_SERVER_TRANSPORT` | - | stdio | MCP transport (stdio/stream/sse) |
+| `LOG_LEVEL` | - | info | Logging level (debug/info/warn/error) |
+| `ROOTS` | - | - | Filesystem access paths (NAME:PATH,...) |
+
+### Usage
+
+```bash
+RUNTIME_NAME=my-agent \
+WORKSPACE_ID=production \
+NATS_SERVERS=nats://prod:4222 \
+LOG_LEVEL=debug \
+npx @2ly/runtime
+```
+
+## Backend Variables
+
+Configure `@2ly/backend` API server:
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `PORT` | - | 4000 | GraphQL API port |
+| `NATS_URL` | - | nats://localhost:4222 | NATS connection URL |
+| `DGRAPH_URL` | - | localhost:9080 | DGraph gRPC endpoint |
+| `DGRAPH_ALPHA_URL` | - | http://localhost:8080 | DGraph Alpha HTTP endpoint |
+| `NODE_ENV` | - | development | Environment (development/production) |
+| `LOG_LEVEL` | - | info | Logging verbosity |
+| `CORS_ORIGIN` | - | * | CORS allowed origins |
+
+### Usage
+
+```bash
+PORT=4000 \
+NATS_URL=nats://prod:4222 \
+DGRAPH_URL=dgraph:9080 \
+NODE_ENV=production \
+npm run start:backend
+```
+
+## Frontend Variables
+
+Configure `@2ly/frontend` React application:
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `VITE_API_URL` | - | http://localhost:4000 | Backend GraphQL URL |
+| `VITE_WS_URL` | - | ws://localhost:4000 | GraphQL subscriptions WebSocket |
+| `PORT` | - | 8888 | Frontend dev server port |
+
+### Usage
+
+```bash
+VITE_API_URL=https://api.2ly.ai \
+VITE_WS_URL=wss://api.2ly.ai \
+npm run dev:frontend
+```
+
+## Python SDK Variables
+
+Configure `twoly` Python SDK:
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `WORKSPACE_ID` | - | DEFAULT | Workspace identifier |
+| `NATS_SERVERS` | - | nats://localhost:4222 | NATS server URL |
+
+### Usage
+
+```python
+# Via environment
+import os
+os.environ['WORKSPACE_ID'] = 'my-workspace'
+os.environ['NATS_SERVERS'] = 'nats://prod:4222'
+
+from twoly import TwolyMCP
+async with TwolyMCP("my-agent") as mcp:
+    pass
+
+# Or via options (overrides env)
+async with TwolyMCP("my-agent", {
+    "workspace": "my-workspace",
+    "nats_servers": "nats://prod:4222"
+}) as mcp:
+    pass
+```
+
+## NATS Configuration
+
+NATS-specific variables:
+
+| Variable | Description |
+|----------|-------------|
+| `NATS_SERVERS` | Comma-separated server list |
+| `NATS_USER` | Authentication username |
+| `NATS_PASS` | Authentication password |
+| `NATS_TOKEN` | Authentication token |
+| `NATS_TLS_CERT` | TLS certificate path |
+| `NATS_TLS_KEY` | TLS key path |
+| `NATS_TLS_CA` | TLS CA certificate path |
+
+### TLS Example
+
+```bash
+NATS_SERVERS=nats://secure.example.com:4222 \
+NATS_TLS_CERT=/certs/client.crt \
+NATS_TLS_KEY=/certs/client.key \
+NATS_TLS_CA=/certs/ca.crt \
+npx @2ly/runtime
+```
+
+### Clustered NATS
+
+```bash
+NATS_SERVERS=nats://nats1:4222,nats://nats2:4222,nats://nats3:4222 \
+npx @2ly/runtime
+```
+
+## DGraph Configuration
+
+DGraph database variables:
+
+| Variable | Description |
+|----------|-------------|
+| `DGRAPH_URL` | DGraph gRPC endpoint (host:port) |
+| `DGRAPH_ALPHA_URL` | DGraph Alpha HTTP URL |
+| `DGRAPH_API_KEY` | Authentication API key |
+
+### Example
+
+```bash
+DGRAPH_URL=dgraph-alpha:9080 \
+DGRAPH_ALPHA_URL=http://dgraph-alpha:8080 \
+npm run start:backend
+```
+
+## Environment-Specific Configs
+
+### Development
+
+```bash
+# .env.development
+NODE_ENV=development
+LOG_LEVEL=debug
+NATS_SERVERS=nats://localhost:4222
+DGRAPH_URL=localhost:9080
+VITE_API_URL=http://localhost:4000
+```
+
+### Staging
+
+```bash
+# .env.staging
+NODE_ENV=staging
+LOG_LEVEL=info
+NATS_SERVERS=nats://staging-nats:4222
+DGRAPH_URL=staging-dgraph:9080
+VITE_API_URL=https://staging-api.2ly.ai
+```
+
+### Production
+
+```bash
+# .env.production
+NODE_ENV=production
+LOG_LEVEL=warn
+NATS_SERVERS=nats://prod-nats-1:4222,nats://prod-nats-2:4222
+DGRAPH_URL=prod-dgraph:9080
+VITE_API_URL=https://api.2ly.ai
+CORS_ORIGIN=https://2ly.ai
+```
+
+## Docker Compose Example
+
+```yaml
+services:
+  backend:
+    environment:
+      - NATS_URL=nats://nats:4222
+      - DGRAPH_URL=dgraph:9080
+      - NODE_ENV=production
+      - LOG_LEVEL=info
+
+  runtime:
+    environment:
+      - RUNTIME_NAME=${RUNTIME_NAME}
+      - WORKSPACE_ID=${WORKSPACE_ID}
+      - NATS_SERVERS=nats://nats:4222
+      - LOG_LEVEL=debug
+
+  frontend:
+    environment:
+      - VITE_API_URL=http://backend:4000
+      - VITE_WS_URL=ws://backend:4000
+```
+
+## Kubernetes Example
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: 2ly-config
+data:
+  NATS_SERVERS: "nats://nats.2ly.svc.cluster.local:4222"
+  DGRAPH_URL: "dgraph.2ly.svc.cluster.local:9080"
+  LOG_LEVEL: "info"
+---
+apiVersion: apps/v1
+kind: Deployment
+spec:
+  template:
+    spec:
+      containers:
+      - name: runtime
+        envFrom:
+        - configMapRef:
+            name: 2ly-config
+        env:
+        - name: RUNTIME_NAME
+          value: "prod-runtime-1"
+```
+
+## Best Practices
+
+**Use .env files** for local development
+
+**Never commit** .env files to version control
+
+**Use secrets management** for production (Vault, AWS Secrets Manager)
+
+**Validate required vars** at startup
+
+**Document** all custom environment variables
+
+**Use defaults** for dev, explicit for prod
+
+## Troubleshooting
+
+**Variable not taking effect:**
+- Check spelling and case sensitivity
+- Ensure variable set before process starts
+- Verify no typos in variable name
+
+**Connection errors:**
+- Validate URL format correct
+- Check network connectivity
+- Verify ports not blocked
+
+**Missing required variable:**
+- Check error message for variable name
+- Set in environment or .env file
+- Verify variable exported (if using shell)
+
+## Next Steps
+
+- [Runtime Deployment](../../deployment/runtime) - Deploy with env vars
+- [Security](../../deployment/security) - Secure configuration
+- [Troubleshooting](./troubleshooting) - Common issues

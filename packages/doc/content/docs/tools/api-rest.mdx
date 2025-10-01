@@ -1,0 +1,361 @@
+---
+title: "API REST"
+description: "Deploy REST API integrations as tools in 2LY runtimes"
+draft: true
+---
+
+
+REST API integrations provide HTTP endpoint access to external services through 2LY's tool runtime. APIs are wrapped with authentication, request/response mapping, and error handling to create standardized tool interfaces for agents.
+
+## REST API Integration
+
+2LY transforms HTTP APIs into standardized tools that agents can invoke:
+
+- **HTTP Endpoint Wrapping**: Convert REST APIs to tool interfaces
+- **Authentication Management**: Handle API keys, OAuth, and custom auth
+- **Request/Response Mapping**: Transform data between agent calls and API formats
+- **Error Handling**: Standardized error responses and retry logic
+
+## API Configuration
+
+### Basic API Setup
+
+Configure REST APIs as tools through the 2LY interface:
+
+```json
+{
+  "name": "weather-api",
+  "type": "api_rest",
+  "base_url": "https://api.weather.com/v1",
+  "authentication": {
+    "type": "api_key",
+    "key": "${WEATHER_API_KEY}",
+    "location": "header"
+  }
+}
+```
+
+### Authentication Types
+
+2LY supports multiple authentication patterns:
+
+#### API Key Authentication
+```json
+{
+  "authentication": {
+    "type": "api_key",
+    "key": "${API_KEY}",
+    "location": "header",
+    "name": "X-API-Key"
+  }
+}
+```
+
+#### Bearer Token Authentication
+```json
+{
+  "authentication": {
+    "type": "bearer",
+    "token": "${ACCESS_TOKEN}"
+  }
+}
+```
+
+#### OAuth 2.0 Authentication
+```json
+{
+  "authentication": {
+    "type": "oauth2",
+    "client_id": "${CLIENT_ID}",
+    "client_secret": "${CLIENT_SECRET}",
+    "token_url": "https://api.service.com/oauth/token"
+  }
+}
+```
+
+#### Custom Header Authentication
+```json
+{
+  "authentication": {
+    "type": "custom",
+    "headers": {
+      "Authorization": "Custom ${API_TOKEN}",
+      "X-Client-ID": "${CLIENT_ID}"
+    }
+  }
+}
+```
+
+## Endpoint Configuration
+
+### Endpoint Definition
+
+Define API endpoints as callable tools:
+
+```json
+{
+  "endpoints": [
+    {
+      "name": "get_weather",
+      "method": "GET",
+      "path": "/weather",
+      "parameters": [
+        {
+          "name": "location",
+          "type": "string",
+          "required": true,
+          "location": "query"
+        },
+        {
+          "name": "units",
+          "type": "string",
+          "required": false,
+          "location": "query",
+          "default": "metric"
+        }
+      ],
+      "response_mapping": {
+        "temperature": "data.main.temp",
+        "description": "data.weather[0].description",
+        "humidity": "data.main.humidity"
+      }
+    }
+  ]
+}
+```
+
+### Parameter Types
+
+Support for various parameter types and locations:
+
+**Query Parameters**: URL query string values
+**Path Parameters**: URL path template variables
+**Header Parameters**: HTTP header values
+**Body Parameters**: Request body content
+
+### Response Mapping
+
+Transform API responses to agent-friendly formats:
+
+```json
+{
+  "response_mapping": {
+    "simple_field": "response.field_name",
+    "nested_field": "response.data.nested.value",
+    "array_field": "response.items[*].name",
+    "computed_field": {
+      "type": "template",
+      "template": "Temperature is {{response.main.temp}}°C"
+    }
+  }
+}
+```
+
+## Runtime Deployment
+
+### API Tool Deployment
+
+REST API tools are deployed as runtime services:
+
+**Local Docker**: Development and testing
+- Containerized execution with API proxying
+- Local debugging and request logging
+
+**Remote Runtime**: Production deployment
+- Cloud infrastructure with auto-scaling
+- Load balancing across multiple instances
+
+**Edge Runtime**: Global distribution
+- Regional API caching and optimization
+- Reduced latency for geographically distributed usage
+
+### Rate Limiting
+
+Built-in rate limiting and throttling:
+
+```json
+{
+  "rate_limiting": {
+    "requests_per_minute": 100,
+    "burst_limit": 10,
+    "retry_strategy": "exponential_backoff"
+  }
+}
+```
+
+## Popular API Integrations
+
+### CRM APIs
+**Salesforce, HubSpot, Pipedrive**
+- Contact and lead management
+- Sales pipeline operations
+- Activity tracking and reporting
+
+### Communication APIs
+**Twilio, SendGrid, Slack**
+- SMS and voice messaging
+- Email delivery and tracking
+- Team collaboration and notifications
+
+### Payment APIs
+**Stripe, PayPal, Square**
+- Payment processing and invoicing
+- Subscription management
+- Transaction reporting
+
+### Cloud Service APIs
+**AWS, Google Cloud, Azure**
+- Resource management and monitoring
+- Storage and compute operations
+- Service configuration and scaling
+
+## Agent Integration
+
+### API Tool Access
+
+Agents access API tools through standardized interfaces:
+
+```python
+from twoly import TwolyMCP
+
+async def create_agent():
+    async with TwolyMCP("my-agent") as mcp:
+        # Automatic discovery of deployed API tools
+        tools = await mcp.get_langchain_tools()
+        
+        # Tools include all deployed API endpoints as callable functions
+        return create_agent(llm=your_llm, tools=tools)
+```
+
+### Tool Discovery
+
+API endpoints are exposed as individual tools:
+
+- **Function Enumeration**: List available API endpoints as tools
+- **Schema Validation**: Parameter and response type checking
+- **Documentation**: Auto-generated tool descriptions
+- **Error Mapping**: Consistent error handling across APIs
+
+## Advanced Configuration
+
+### Environment Variables
+
+Secure credential and configuration management:
+
+```bash
+# API authentication
+WEATHER_API_KEY=sk_xxxxxxxxxxxx
+SALESFORCE_CLIENT_ID=3MVG9xxxxxxxxxxxx
+SALESFORCE_CLIENT_SECRET=xxxxxxxxxxxx
+
+# API configuration
+API_BASE_URL=https://api.service.com/v2
+API_TIMEOUT_SECONDS=30
+API_RETRY_ATTEMPTS=3
+```
+
+### Request Transformation
+
+Transform requests before sending to APIs:
+
+```json
+{
+  "request_transformation": {
+    "headers": {
+      "Content-Type": "application/json",
+      "User-Agent": "2LY-Agent/1.0"
+    },
+    "body_template": {
+      "query": "{{parameters.search_term}}",
+      "filters": {
+        "status": "active",
+        "limit": "{{parameters.limit | default: 10}}"
+      }
+    }
+  }
+}
+```
+
+### Error Handling
+
+Configure error handling and retry policies:
+
+```json
+{
+  "error_handling": {
+    "retry_codes": [429, 500, 502, 503, 504],
+    "max_retries": 3,
+    "backoff_strategy": "exponential",
+    "timeout_seconds": 30,
+    "circuit_breaker": {
+      "failure_threshold": 5,
+      "recovery_timeout": 60
+    }
+  }
+}
+```
+
+## Operations
+
+### Monitoring
+
+2LY provides comprehensive API tool monitoring:
+
+- **Request Metrics**: Success rates, response times, error rates
+- **Authentication Status**: Token validity and renewal tracking
+- **Rate Limiting**: Usage against API limits and quotas
+- **Performance Analytics**: Endpoint usage patterns and optimization
+
+### Troubleshooting
+
+**Common Issues**:
+
+*Authentication Failures*:
+- Verify API key validity and permissions
+- Check authentication header format
+- Confirm OAuth token refresh logic
+
+*Rate Limiting Errors*:
+- Monitor API usage against limits
+- Implement appropriate backoff strategies
+- Consider API tier upgrades for higher limits
+
+*Response Mapping Errors*:
+- Validate response structure matches mapping
+- Check for API response format changes
+- Test mapping logic with sample responses
+
+### Best Practices
+
+**Security**:
+- Environment variable credential storage
+- API key rotation and monitoring
+- Request/response logging controls
+
+**Performance**:
+- Response caching for read-heavy operations
+- Connection pooling and keep-alive
+- Timeout and retry optimization
+
+**Maintenance**:
+- API version monitoring and updates
+- Breaking change notification handling
+- Documentation synchronization
+
+## Next Steps
+
+1. **[Connect a Tool](/your-first-toolflow/connect-tool)** - Deploy your first API tool
+2. **[Deploy and Run](/your-first-toolflow/deploy-run)** - Configure agent-API bindings
+3. **[MCP Servers](/tools/mcp-servers)** - Alternative standardized tool protocol
+4. **[Capabilities](/tools/capabilities)** - Group APIs into capability sets
+
+## Summary
+
+REST API tools in 2LY provide:
+- **HTTP API Wrapping**: Transform APIs into standardized tool interfaces
+- **Authentication Management**: Secure credential handling and auth flows
+- **Request/Response Mapping**: Data transformation and error handling
+- **Runtime Deployment**: Scalable execution across multiple environments
+- **Operational Monitoring**: Performance tracking and troubleshooting
+
+API tools enable agents to interact with any HTTP-based service through consistent, managed interfaces.

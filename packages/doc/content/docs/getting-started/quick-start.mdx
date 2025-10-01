@@ -1,0 +1,67 @@
+---
+title: Quick Start
+description: Create your first toolset in a minute
+draft: false
+---
+
+Create a workspace, connect an agent, and configure your first tool.
+
+## Prerequisites
+
+[Install 2LY](/getting-started/installation) and ensure it's running at http://localhost:8888
+
+## 1. Create Workspace
+
+1. Open http://localhost:8888
+2. Create a new workspace
+
+## 2. Connect Agent
+
+1. Select **Sandbox** to generate a sample agent
+2. Click **Create Agent** and name it 2LY_bot
+
+## 3. Add Tool
+
+1. Select **MCP** as a tool category
+2. Select featured MCP **Hackernews** MCP server
+3. Validate configuration`
+4. Click **Test Server**
+5. Click **Save**
+
+## 4. Link Tool to Agent
+
+1. Select which tools the agent can access
+2. Click **Save**
+
+Et voilà !
+
+## 5. Test in Playground (Optional)
+
+1. Choose a tool 
+2. Add instruction and click **Test**
+3. Verify the execution of the interaction 
+
+## Verification
+
+You should have:
+- ✅ Workspace created
+- ✅ Sandbox agent running
+- ✅ Configured tool connected
+
+## Next Steps
+
+- [Connect Real Agent](/your-first-toolflow/connect-agent) - LangChain/LangGraph
+- [More Tools](/tools/mcp-servers) - Explore MCP servers
+- [Architecture](/getting-started/architecture) - How 2LY works
+
+## Troubleshooting
+
+**Can't access localhost:8888?**
+```bash
+npm run start
+docker-compose ps
+```
+
+**MCP test fails?**
+- Check directory permissions
+- Try `/tmp` instead of Desktop

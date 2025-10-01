@@ -1,0 +1,136 @@
+---
+title: "MCP Servers"
+description: "Integrate any MCP server in 2LY"
+draft: false
+---
+
+2LY integrates any Model Context Protocol (MCP) server available on the market—from official provider implementations to community packages. Configure once in the Tool Registry, use across all agents.
+
+## What are MCP Servers?
+
+MCP is an open standard protocol developed by Anthropic for AI tool interfaces. It provides:
+
+- **Standardized APIs**: Consistent interface patterns across tools
+- **Type Safety**: Well-defined schemas for inputs and outputs
+- **Self-Documentation**: Automatic capabilities and parameters discovery
+- **Error Handling**: Standardized error reporting
+
+**Reference**: [Model Context Protocol](https://modelcontextprotocol.io/)
+
+## Tool Registry
+
+All configured MCP servers are stored in 2LY's **Tool Registry**—a centralized catalog of available tools:
+
+- Configure MCP servers once
+- Access from any agent
+- Test tools before deployment
+
+The Tool Registry ensures consistent tool access across your entire agent ecosystem.
+
+## Supported Server Types
+
+2LY supports all MCP server communication patterns:
+
+### STDIO Servers
+Standard process communication via stdin/stdout:
+
+```json
+{
+  "type": "stdio",
+  "command": "npx",
+  "args": ["@modelcontextprotocol/server-filesystem", "/data"],
+  "env": {
+    "PATH_ROOT": "/data"
+  }
+}
+```
+
+**Common use**: Node.js packages, Python scripts, local binaries
+
+### HTTP Servers
+RESTful MCP implementations:
+
+```json
+{
+  "type": "http",
+  "url": "https://api.example.com/mcp",
+  "headers": {
+    "Authorization": "Bearer ${API_TOKEN}"
+  }
+}
+```
+
+**Common use**: Cloud services, remote APIs, enterprise systems
+
+### WebSocket Servers
+Real-time bidirectional communication:
+
+```json
+{
+  "type": "websocket",
+  "url": "wss://api.example.com/mcp",
+  "protocols": ["mcp-v1"]
+}
+```
+
+**Common use**: Streaming data, live updates, persistent connections
+
+## Adding MCP Servers
+
+2LY provides two ways to add MCP servers to your Tool Registry:
+
+### 1. Browse Official Catalog
+
+Access the official Anthropic MCP server catalog directly from 2LY:
+
+- **Curated Registry**: Pre-validated, community-maintained servers
+- **One-Click Add**: Deploy catalog servers with minimal configuration
+- **Quality Assurance**: Servers validated by Anthropic and community
+- **Automatic Updates**: Server definitions sync from official registry
+
+**Examples**: Filesystem, GitHub, PostgreSQL, Slack, Brave Search
+
+### 2. Add Manually
+
+Configure any custom or community MCP server:
+
+- **Simplified UI Workflow**: Step-by-step configuration wizard
+- **Connection Testing**: Validate server connectivity before saving
+- **Environment Variables**: Secure credential management
+- **Custom Sources**: Private servers, internal tools, experimental packages
+
+## Configuration Workflow
+
+1. **Select Source**: Choose from Anthropic catalog or manual entry
+2. **Configure Connection**: Set server type, command/URL, and parameters
+3. **Add Credentials**: Environment variables for API keys and secrets
+4. **Test Server**: Validate connectivity and tool discovery
+5. **Save to Registry**: Add to Tool Registry for agent access
+
+## Testing Features
+
+Before deploying MCP servers, 2LY provides built-in testing:
+
+- **Connection Validation**: Verify server starts and responds
+- **Tool Discovery**: Confirm available tools are detected
+- **Test Execution**: Run sample tool calls with mock data
+- **Error Reporting**: Detailed diagnostics for troubleshooting
+
+## Security
+
+**Credential Management**:
+- Environment variables for sensitive data
+- Secrets stored encrypted
+- No credentials in agent code
+- Centralized credential rotation
+
+**Access Control**:
+- Assign tools to specific agents
+- Tool-level permissions
+- Audit logging for all tool calls
+
+## Next Steps
+
+- [Connect Tool](/your-first-toolflow/connect-tool) - Add your first MCP server
+- [Capabilities](/tools/capabilities) - Group and manage tools
+- [API REST](/tools/api-rest) - Alternative HTTP integration

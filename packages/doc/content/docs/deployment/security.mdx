@@ -1,0 +1,329 @@
+---
+title: "Security"
+description: "Security architecture for 2LY deployments"
+draft: true
+---
+
+2LY implements security across network, application, and data layers.
+
+## Security Overview
+
+**Current Status (v0.x):**
+- ⚠️ Authentication: Not yet implemented
+- ⚠️ Authorization: Not yet implemented
+- ✅ TLS: Configurable
+- ✅ Network Isolation: Via Docker/Kubernetes
+- ⚠️ Audit Logging: Basic only
+
+**Roadmap:**
+- JWT authentication (Q1 2025)
+- RBAC authorization (Q1 2025)
+- Comprehensive audit logs (Q2 2025)
+
+## Network Security
+
+### TLS Configuration
+
+Configure TLS for NATS and GraphQL:
+
+**NATS with TLS:**
+```bash
+NATS_SERVERS=nats://localhost:4222 \
+NATS_TLS_CERT=/path/to/cert.pem \
+NATS_TLS_KEY=/path/to/key.pem \
+NATS_TLS_CA=/path/to/ca.pem \
+npx @2ly/runtime
+```
+
+**GraphQL API with TLS:**
+Use reverse proxy (Nginx/Traefik) for HTTPS.
+
+### Network Segmentation
+
+Isolate components:
+
+```yaml
+# docker-compose.yml
+services:
+  backend:
+    networks:
+      - backend-network
+      - nats-network
+
+  nats:
+    networks:
+      - nats-network
+
+  dgraph:
+    networks:
+      - backend-network
+```
+
+### Firewall Rules
+
+Restrict access:
+- **Backend API**: Port 4000 (internal only)
+- **Frontend**: Port 8888 (public)
+- **NATS**: Port 4222 (internal only)
+- **DGraph**: Port 8080 (internal only)
+
+## Data Security
+
+### Secrets Management
+
+**DO NOT:**
+- ❌ Hardcode API keys in tool configurations
+- ❌ Store credentials in environment variables
+- ❌ Commit secrets to version control
+
+**DO:**
+- ✅ Use secret management service (Vault, AWS Secrets Manager)
+- ✅ Inject secrets at runtime
+- ✅ Rotate secrets regularly
+
+**Example with Vault:**
+```bash
+# Store secret
+vault kv put secret/2ly/github token=ghp_xxx
+
+# Retrieve in runtime
+GITHUB_TOKEN=$(vault kv get -field=token secret/2ly/github) \
+npx @2ly/runtime
+```
+
+### Environment Variables
+
+Secure sensitive configuration:
+
+```bash
+# .env (DO NOT commit)
+NATS_SERVERS=nats://prod:4222
+WORKSPACE_ID=production
+GITHUB_TOKEN=${VAULT_GITHUB_TOKEN}
+OPENAI_API_KEY=${VAULT_OPENAI_KEY}
+```
+
+Add to `.gitignore`:
+```
+.env
+.env.local
+.env.production
+*.key
+*.pem
+```
+
+### Encryption at Rest
+
+**DGraph encryption:**
+```yaml
+services:
+  dgraph:
+    command: dgraph alpha --encryption_key_file /secrets/key
+    volumes:
+      - ./secrets:/secrets:ro
+```
+
+## Runtime Security
+
+### Container Isolation
+
+Run runtimes in containers:
+
+**Docker:**
+```bash
+docker run \
+  --read-only \
+  --security-opt=no-new-privileges \
+  --cap-drop=ALL \
+  -e RUNTIME_NAME=secure-runtime \
+  @2ly/runtime
+```
+
+**Kubernetes:**
+```yaml
+apiVersion: v1
+kind: Pod
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+  containers:
+  - name: runtime
+    image: 2ly/runtime
+    securityContext:
+      allowPrivilegeEscalation: false
+      readOnlyRootFilesystem: true
+```
+
+### Resource Limits
+
+Prevent resource exhaustion:
+
+```yaml
+services:
+  runtime:
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+```
+
+### Root Access Control
+
+Limit filesystem access with ROOTS:
+
+```bash
+# Only allow access to /data and /tmp
+ROOTS=DATA:/data,TMP:/tmp \
+RUNTIME_NAME=restricted-runtime \
+npx @2ly/runtime
+```
+
+## Access Control (Planned)
+
+### RBAC Model (Coming Soon)
+
+Future role-based access:
+
+| Role | Permissions |
+|------|-------------|
+| **Agent Developer** | Create agents, read tools |
+| **Tool Operator** | Configure tools, monitor runtimes |
+| **Runtime Admin** | Full access |
+| **Viewer** | Read-only access |
+
+### API Authentication (Coming Soon)
+
+Future JWT-based auth:
+
+```javascript
+// Will be available in v1.0
+const response = await fetch('/api/agents', {
+  headers: {
+    'Authorization': `Bearer ${jwt_token}`
+  }
+});
+```
+
+## Best Practices
+
+### Development
+
+- Use separate workspaces for dev/staging/prod
+- Test security configurations in staging
+- Never use production secrets in development
+
+### Production
+
+- Enable TLS for all connections
+- Use secret management service
+- Implement network segmentation
+- Run containers with minimal privileges
+- Set resource limits
+- Monitor for suspicious activity
+- Regular security audits
+
+### Secrets Rotation
+
+Rotate credentials regularly:
+
+```bash
+# Automated rotation script
+#!/bin/bash
+vault kv put secret/2ly/github token=$(generate_new_token)
+kubectl rollout restart deployment/runtime
+```
+
+## Monitoring & Audit
+
+### Security Logging
+
+Log security events:
+
+```bash
+# Enable verbose logging
+LOG_LEVEL=debug npx @2ly/runtime
+```
+
+Monitor:
+- Runtime connections/disconnections
+- Tool execution attempts
+- Failed authentication (when available)
+- Suspicious patterns
+
+### Alerting
+
+Set up alerts for:
+- Unauthorized access attempts
+- Unusual tool execution patterns
+- Resource limit breaches
+- Network anomalies
+
+## Compliance
+
+### Data Residency
+
+Control where data is processed:
+
+```bash
+# EU runtime
+NATS_SERVERS=nats://eu-prod:4222 \
+REGION=eu-west-1 \
+npx @2ly/runtime
+```
+
+### Audit Trail
+
+Log all operations for compliance:
+
+```javascript
+// Future audit logging
+{
+  "timestamp": "2025-01-15T10:30:00Z",
+  "user": "agent-123",
+  "action": "tool_execution",
+  "tool": "database_query",
+  "resource": "customer_data",
+  "result": "success"
+}
+```
+
+## Security Checklist
+
+**Pre-Production:**
+- [ ] TLS enabled for all connections
+- [ ] Secrets in secret manager (not env vars)
+- [ ] Network segmentation configured
+- [ ] Container security policies applied
+- [ ] Resource limits set
+- [ ] ROOTS configured for filesystem access
+- [ ] Firewall rules in place
+
+**Production:**
+- [ ] Regular security audits
+- [ ] Secret rotation schedule
+- [ ] Monitoring and alerting configured
+- [ ] Backup and disaster recovery tested
+- [ ] Incident response plan documented
+
+## Troubleshooting
+
+**TLS connection fails:**
+- Verify certificate paths correct
+- Check certificate not expired
+- Ensure CA trusted
+
+**Container won't start:**
+- Check security policies not too restrictive
+- Verify user permissions
+- Review resource limits
+
+## Next Steps
+
+- [Monitoring](../runtime-deployment/monitoring) - Security monitoring
+- [Runtime Deployment](./runtime) - Secure deployment
+- [Security Guide](../runtime-deployment/security-guide) - Advanced security

@@ -1,0 +1,410 @@
+---
+title: "Security Guide"
+description: "Security considerations and best practices for 2LY deployment"
+draft: true
+---
+
+This guide covers current security features and recommendations for securing your 2LY deployment. Note that authentication and authorization are minimal in the current version.
+
+## Current Security State
+
+### ✅ Implemented
+
+**Password Hashing:**
+- User passwords stored with bcrypt
+- Secure password comparison
+
+**Database Access:**
+- DGraph network whitelist (Docker network isolation)
+- No public exposure by default
+
+**Docker Security:**
+- Services run as non-root users
+- Network isolation via Docker networks
+- Volume permissions configured
+
+### ⚠️ Not Implemented
+
+**API Authentication:**
+- GraphQL API currently has no authentication
+- Anyone with network access can query/mutate
+
+**NATS Authentication:**
+- No authentication on NATS connections
+- Any client can connect and publish/subscribe
+
+**Runtime Authentication:**
+- Runtimes connect without credentials
+- No verification of runtime identity
+
+**Rate Limiting:**
+- No rate limits on API or tool execution
+- Potential for abuse or DoS
+
+**Audit Logging:**
+- No comprehensive audit trail
+- Limited logging of security events
+
+## Security Recommendations
+
+### Network Security
+
+**Firewall Configuration:**
+```bash
+# Only expose frontend port publicly
+iptables -A INPUT -p tcp --dport 8888 -j ACCEPT
+
+# Restrict backend to internal network
+iptables -A INPUT -p tcp --dport 3000 -s 10.0.0.0/8 -j ACCEPT
+
+# Restrict NATS to internal network
+iptables -A INPUT -p tcp --dport 4222 -s 10.0.0.0/8 -j ACCEPT
+```
+
+**Docker Network Isolation:**
+```yaml
+# docker-compose.yml
+networks:
+  internal:
+    internal: true  # No external access
+  public:
+    # External access allowed
+
+services:
+  backend:
+    networks:
+      - internal
+      - public
+
+  nats:
+    networks:
+      - internal  # No public access
+```
+
+### Reverse Proxy
+
+Use nginx or similar for SSL/TLS termination:
+
+```nginx
+# nginx.conf
+server {
+  listen 443 ssl;
+  server_name your-2ly.com;
+
+  ssl_certificate /path/to/cert.pem;
+  ssl_certificate_key /path/to/key.pem;
+
+  # Frontend
+  location / {
+    proxy_pass http://localhost:8888;
+  }
+
+  # Backend GraphQL (optional: add auth)
+  location /graphql {
+    # Add authentication here
+    proxy_pass http://localhost:3000/graphql;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+  }
+}
+```
+
+### Environment Variables
+
+**Secure Sensitive Data:**
+```bash
+# Don't commit these to version control
+ENCRYPTION_KEY=use-strong-random-key
+AZURE_API_KEY=your-azure-key
+BRAVE_SEARCH_API_KEY=your-brave-key
+
+# Use secrets management
+# - Docker secrets
+# - Kubernetes secrets
+# - HashiCorp Vault
+```
+
+**Generate Strong Keys:**
+```bash
+# Generate encryption key
+openssl rand -hex 32
+
+# Store securely
+echo "ENCRYPTION_KEY=$(openssl rand -hex 32)" >> .env.production
+chmod 600 .env.production
+```
+
+### Database Security
+
+**DGraph Configuration:**
+```yaml
+# docker-compose.yml
+services:
+  dgraph-alpha:
+    command: dgraph alpha --whitelist 172.20.0.0/16
+    # Only allow Docker network access
+```
+
+**Backup Encryption:**
+```bash
+# Encrypt backups
+dgraph backup --encryption-key $(cat key.txt)
+
+# Store backups securely
+aws s3 cp backup.enc s3://secure-bucket/ --sse AES256
+```
+
+### NATS Security (Recommended)
+
+Enable NATS authentication:
+
+```bash
+# Generate credentials
+nats account add ACCOUNT
+nats user add USER --account ACCOUNT
+
+# Configure server
+nats-server -c nats.conf
+```
+
+**nats.conf:**
+```
+authorization {
+  users = [
+    {user: backend, password: $2a$11$...}
+    {user: runtime, password: $2a$11$...}
+  ]
+}
+```
+
+**Runtime Connection:**
+```bash
+NATS_SERVERS=nats://runtime:password@nats:4222
+```
+
+### Runtime Security
+
+**Restrict Runtime Permissions:**
+
+For edge runtimes accessing filesystem:
+```bash
+# Limit roots to specific directories
+ROOTS=SAFE:/home/user/safe,PROJECTS:/home/user/projects
+
+# Don't grant full filesystem access
+# ROOTS=ROOT:/ ❌ Dangerous!
+```
+
+**Runtime Isolation:**
+- Run edge runtimes as unprivileged users
+- Use Docker or VM isolation for tool execution
+- Limit MCP server subprocess permissions
+
+### Tool Execution Security
+
+**MCP Server Sandboxing:**
+
+Tools should be isolated:
+```bash
+# Run runtime in container with limited permissions
+docker run --rm \
+  --user 1000:1000 \
+  --read-only \
+  --security-opt no-new-privileges \
+  @2ly/runtime
+```
+
+**Input Validation:**
+
+Validate tool inputs in agents:
+```python
+# Agent code
+def call_read_file(path: str):
+  # Validate path before calling tool
+  if not path.startswith('/safe/'):
+    raise ValueError('Path not in safe directory')
+
+  return mcp.call_tool('read_file', {'path': path})
+```
+
+## Security Best Practices
+
+### Production Deployment
+
+**Minimum Security Checklist:**
+
+- [ ] Enable HTTPS/SSL for all external connections
+- [ ] Restrict network access to backend and NATS
+- [ ] Use strong ENCRYPTION_KEY
+- [ ] Don't expose DGraph publicly
+- [ ] Run services as non-root users
+- [ ] Enable Docker security features
+- [ ] Use secrets management (not plain env vars)
+- [ ] Regular security updates
+- [ ] Monitor logs for suspicious activity
+- [ ] Backup data with encryption
+
+### Runtime Deployment
+
+**Edge Runtime Security:**
+
+When deploying on user machines:
+```bash
+# Minimal permissions
+RUNTIME_NAME=user-edge
+NATS_SERVERS=nats://user:pass@secure-nats:4222
+ROOTS=USER_HOME:/home/$USER/2ly-workspace
+
+# Run as user (not root)
+su - $USER -c "npx @2ly/runtime"
+```
+
+**Agent Runtime Security:**
+
+Agents should validate tool responses:
+```python
+result = mcp.call_tool('execute_command', {'cmd': 'ls'})
+
+# Validate result before using
+if result.isError:
+  handle_error(result)
+else:
+  process_safe_result(result)
+```
+
+### Workspace Isolation
+
+**Access Control (Not Implemented):**
+
+Future implementation should include:
+- User authentication and authorization
+- Workspace-level permissions
+- Role-based access control (admin/member)
+- API key management per workspace
+
+**Current Workaround:**
+
+Deploy separate 2LY instances per tenant:
+```bash
+# Tenant A
+docker-compose -f tenant-a.yml up
+
+# Tenant B
+docker-compose -f tenant-b.yml up
+```
+
+### Monitoring & Auditing
+
+**Log Security Events:**
+
+Monitor for suspicious activity:
+```bash
+# Failed connections
+docker logs 2ly-backend | grep "connection refused"
+
+# Unusual tool execution patterns
+docker logs 2ly-backend | grep "AgentCallMCPTool"
+
+# Runtime anomalies
+docker logs 2ly-backend | grep "INACTIVE"
+```
+
+**Set Up Alerts:**
+- Runtime disconnections from untrusted sources
+- High volume of tool executions
+- Failed database queries
+- Error rate spikes
+
+### Incident Response
+
+**If Compromised:**
+
+1. **Isolate:** Disconnect affected components
+2. **Investigate:** Review logs for breach extent
+3. **Rotate:** Change all credentials and keys
+4. **Patch:** Update to latest version
+5. **Restore:** From clean backup if needed
+6. **Monitor:** Watch for recurrence
+
+## Future Security Enhancements
+
+Planned security features:
+
+**Authentication & Authorization:**
+- JWT-based API authentication
+- User session management
+- Workspace-level RBAC
+- API key management
+
+**NATS Security:**
+- Token-based authentication
+- Subject-level permissions
+- Encrypted connections
+
+**Runtime Security:**
+- Runtime authentication tokens
+- Certificate-based verification
+- Runtime permission levels
+
+**Audit Logging:**
+- Comprehensive audit trail
+- Security event logging
+- Log aggregation and analysis
+
+**Rate Limiting:**
+- API rate limits per user/workspace
+- Tool execution throttling
+- Abuse prevention
+
+## Compliance Considerations
+
+**Data Privacy:**
+- Tool execution data may contain sensitive information
+- Consider data residency requirements
+- Implement data retention policies
+
+**Access Control:**
+- Document who has access to what
+- Implement principle of least privilege
+- Regular access reviews
+
+**Encryption:**
+- Data at rest (DGraph backups)
+- Data in transit (SSL/TLS)
+- Secrets management
+
+## Security Resources
+
+**Stay Updated:**
+- Monitor security advisories
+- Subscribe to security mailing lists
+- Follow CVE databases
+
+**Security Tools:**
+- Use vulnerability scanners
+- Run security audits
+- Implement penetration testing
+
+**Incident Response:**
+- Document security procedures
+- Practice incident response
+- Have backup and recovery plans
+
+## Reporting Security Issues
+
+**Do NOT open public GitHub issues for security vulnerabilities.**
+
+Contact: [security contact to be added]
+
+Include:
+- Description of vulnerability
+- Steps to reproduce
+- Potential impact
+- Suggested fix (if any)
+
+## Next Steps
+
+- [Monitoring](/runtime-deployment/monitoring) - Monitor for security events
+- [Runtime Deployment](/runtime-deployment/runtime) - Secure deployment practices
+- [Architecture Overview](/technical-concepts/architecture-overview) - Understand system boundaries

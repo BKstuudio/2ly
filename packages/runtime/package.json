@@ -1,0 +1,68 @@
+{
+  "name": "@2ly/runtime",
+  "version": "0.0.4",
+  "description": "2ly Runtime - NodeJS processes for edge execution connected to backend orchestrator via NATS",
+  "author": "Eiger AI",
+  "license": "See license in LICENSE",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "runtime",
+    "edge",
+    "nats",
+    "2ly"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/2ly-ai/2ly.git",
+    "directory": "packages/runtime"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "dist/index.js",
+  "bin": {
+    "runtime": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "npx tsx tooling/esbuild.build.ts",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "debug": "tsx --inspect-brk src/index.ts",
+    "lint": "eslint \"{src,test}/**/*.{js,ts}\"",
+    "format": "prettier --write \"{src,test}/**/*.*\" && rm -rf node_modules/.cache/prettier",
+    "format:check": "prettier --check \"{src,test}/**/*.*\"",
+    "typecheck": "tsc --noEmit --skipLibCheck"
+  },
+  "dependencies": {
+    "@apollo/server": "^4.12.2",
+    "@fastify/cors": "^11.0.1",
+    "@grpc/grpc-js": "^1.13.4",
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "@nitra/as-integrations-fastify": "^3.0.2",
+    "dotenv": "^16.5.0",
+    "fastify": "^5.3.3",
+    "graphql": "^16.11.0"
+  },
+  "devDependencies": {
+    "@types/google-protobuf": "^3.15.12",
+    "@types/json-schema": "^7.0.15",
+    "@types/node": "^22.13.5",
+    "@types/protobufjs": "^6.0.0"
+  }
+}

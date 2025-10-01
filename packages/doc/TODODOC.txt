@@ -1,0 +1,1294 @@
+================================================================================
+2LY DOCUMENTATION IMPROVEMENT ROADMAP
+================================================================================
+
+Generated: 2025-09-30
+Based on: Comprehensive codebase analysis vs current documentation (30 MDX files)
+Codebase Version: Commit 70e5730
+
+This document provides an exhaustive list of improvements needed for the 2ly
+documentation package based on the current state of the project codebase.
+
+================================================================================
+EXECUTIVE SUMMARY
+================================================================================
+
+Current Documentation Stats:
+- Total MDX Files: 30 (excluding 15 archived files)
+- Total Lines: ~6,300 lines
+- Coverage: ~40% of actual implementation
+
+Key Gaps Identified:
+1. Missing technical architecture details (NATS messaging, DGraph schema)
+2. Incomplete API documentation (GraphQL schema, NATS messages)
+3. Missing deployment guides (production, scaling, monitoring)
+4. No Python SDK comprehensive guide
+5. Limited troubleshooting and operations documentation
+6. Missing security and authentication guidance
+7. No development/contribution guide beyond basic setup
+
+================================================================================
+SECTION 1: CRITICAL MISSING DOCUMENTATION
+================================================================================
+
+1.1 NATS Messaging Architecture
+────────────────────────────────────────────────────────────────────────────
+PRIORITY: CRITICAL
+STATUS: ✅ COMPLETED (2025-09-30)
+LOCATION: technical-concepts/nats-messaging.mdx
+
+CONTENT NEEDED:
+- NATS role in 2ly architecture
+- Subject naming conventions:
+  * runtime.connect
+  * runtime.{RID}.*
+  * agent-call-mcp-tool.{toolId}.{fromRuntimeId}
+  * update-configured-mcp-server.{RID}
+  * agent-capabilities.{RID}
+- Message types and their purposes (20+ message classes)
+- JetStream usage for persistence
+- KV stores:
+  * heartbeat (TTL: 30s) - Runtime liveness
+  * ephemeral (TTL: 60s) - Config propagation
+- Request/response patterns
+- Observable subscriptions
+- Message flow diagrams for:
+  * Runtime registration
+  * Tool execution
+  * Config updates
+  * Heartbeat monitoring
+
+CODE REFERENCES:
+- packages/common/src/services/nats.service.ts
+- packages/common/src/messages/*.message.ts
+- packages/backend/src/services/runtime.service.ts
+
+────────────────────────────────────────────────────────────────────────────
+
+1.2 DGraph Database Schema & Data Models
+────────────────────────────────────────────────────────────────────────────
+PRIORITY: CRITICAL
+STATUS: ✅ COMPLETED (2025-09-30)
+LOCATION: technical-concepts/database-schema.mdx
+
+CONTENT NEEDED:
+- Complete DGraph schema documentation
+- Entity relationships diagram
+- Key entities:
+  * System (singleton)
+  * Workspace (multi-tenancy)
+  * Runtime (execution environment)
+  * MCPServer (tool server configuration)
+  * MCPTool (discovered tools)
+  * User (authentication)
+- Field descriptions and constraints
+- Queries and mutations patterns
+- Subscription patterns
+- Search indices
+- Data lifecycle (creation, updates, deletion)
+- Workspace isolation model
+
+CODE REFERENCES:
+- packages/common/schema/dgraph.schema.graphql
+- packages/backend/src/repositories/*.repository.ts
+
+────────────────────────────────────────────────────────────────────────────
+
+1.3 GraphQL API Complete Reference
+────────────────────────────────────────────────────────────────────────────
+PRIORITY: CRITICAL
+STATUS: ✅ COMPLETED (2025-09-30)
+LOCATION: api-reference/graphql-api.mdx
+
+FILES CREATED:
+- ✅ api-reference/graphql-api.mdx (comprehensive single-page reference)
+
+CONTENT NEEDED:
+- Complete schema documentation
+- All queries with parameters and examples:
+  * workspace
+  * mcpServers
+  * system
+  * registry
+  * searchMCPServers (AI-powered)
+  * fetchMCPServerConfig (AI-powered)
+  * workspaceMCPTools
+  * isMCPAutoConfigEnabled
+- All mutations with parameters and examples:
+  * CRUD for MCPServer
+  * CRUD for Runtime
+  * Link/unlink operations
+  * Configuration updates
+- All subscriptions:
+  * runtimes (real-time status)
+  * mcpServers (config changes)
+  * mcpTools (availability)
+- Error handling patterns
+- Authentication (currently not implemented)
+- Rate limiting (currently not implemented)
+
+CODE REFERENCES:
+- packages/common/schema/apollo.schema.graphql
+- packages/backend/src/database/resolvers.ts
+- packages/backend/src/services/apollo.service.ts
+
+────────────────────────────────────────────────────────────────────────────
+
+1.4 Runtime Detailed Implementation
+────────────────────────────────────────────────────────────────────────────
+PRIORITY: CRITICAL
+STATUS: ✅ COMPLETED (2025-09-30)
+LOCATION: technical-concepts/runtime-implementation.mdx
+
+CONTENT NEEDED:
+- Runtime Identity (RID = {id}-{pid})
+- Capability model (agent, tool)
+- Service architecture:
+  * RuntimeMainService (lifecycle)
+  * AgentService & AgentServerService (MCP server)
+  * ToolService & ToolClientService (tool execution)
+  * ToolServerService (MCP client)
+  * IdentityService (identification)
+  * RuntimeHealthService (heartbeat)
+- MCP transports:
+  * STDIO (default for agents)
+  * STREAM (HTTP-based)
+  * SSE (legacy)
+- Configuration options:
+  * RUNTIME_NAME (required)
+  * WORKSPACE_ID
+  * AGENT_SERVER_TRANSPORT
+  * ROOTS (filesystem access)
+  * GLOBAL_RUNTIME flag
+  * DEFAULT_TESTING_RUNTIME flag
+  * Capability flags
+- Lifecycle states
+- Message handling
+- Error recovery and reconnection
+- Process management
+
+CODE REFERENCES:
+- packages/runtime/src/services/*.ts
+- packages/runtime/README.md
+
+────────────────────────────────────────────────────────────────────────────
+
+1.5 Python SDK Complete Guide
+────────────────────────────────────────────────────────────────────────────
+PRIORITY: CRITICAL
+STATUS: ✅ COMPLETED (2025-09-30)
+LOCATION: sdk/python-overview.mdx
+
+FILES CREATED:
+- ✅ sdk/python-overview.mdx (comprehensive single-page guide covering all aspects)
+
+CONTENT NEEDED:
+TwolyMCP class:
+- Constructor parameters
+- Configuration options (workspace, nats_servers, version, timeout)
+- get_langchain_tools() method
+- Context manager usage
+- Error handling
+- Timeout configuration
+
+TwolyMCPWithoutAdapter class:
+- Direct MCP integration
+- list_tools() method
+- call_tool() method
+- No LangChain dependency
+
+Integration examples:
+- LangChain agents
+- LangGraph workflows
+- Custom frameworks
+- Error handling patterns
+- Async patterns
+- Multiple agents
+
+Configuration:
+- Environment variables
+- Runtime version selection
+- NATS connection
+- Workspace selection
+- Startup timeout
+
+CODE REFERENCES:
+- packages/twoly/src/twoly/mcp.py
+- packages/twoly/src/twoly/mcp_only.py
+- packages/twoly/examples/*.py
+- packages/twoly/README.md
+
+────────────────────────────────────────────────────────────────────────────
+
+1.6 Tool Routing & Execution Flow
+────────────────────────────────────────────────────────────────────────────
+PRIORITY: CRITICAL
+STATUS: ✅ COMPLETED (2025-09-30)
+LOCATION: technical-concepts/tool-routing.mdx
+
+CONTENT NEEDED:
+- Complete tool execution flow:
+  1. Agent calls tool via MCP
+  2. AgentServerService receives request
+  3. Looks up tool in capabilities
+  4. Publishes AgentCallMCPToolMessage to NATS
+  5. Backend routes based on MCPServer.runOn:
+     - GLOBAL: Routes to workspace.globalRuntime
+     - AGENT: No routing (stays on agent runtime)
+     - EDGE: Routes to MCPServer.runtime
+  6. Target runtime executes via ToolServerService
+  7. Result returned via AgentCallResponseMessage
+- Routing decision logic
+- Message correlation
+- Error handling at each step
+- Timeout handling
+- Retry logic
+- Failure scenarios
+
+DIAGRAMS NEEDED:
+- Sequence diagram for each runOn type (GLOBAL, AGENT, EDGE)
+- Error flow diagrams
+- Timeout handling flow
+
+CODE REFERENCES:
+- packages/runtime/src/services/agent.server.service.ts
+- packages/backend/src/services/runtime.instance.ts
+- packages/runtime/src/services/tool.client.service.ts
+
+────────────────────────────────────────────────────────────────────────────
+
+1.7 MCPServer.runOn Types Detailed Explanation
+────────────────────────────────────────────────────────────────────────────
+PRIORITY: CRITICAL
+STATUS: Mentioned but not explained
+LOCATION: Enhance: core-concepts/tools.mdx
+         Create new: technical-concepts/runon-types.mdx
+
+CONTENT NEEDED:
+GLOBAL:
+- Runs on workspace.globalRuntime
+- Shared by all agents in workspace
+- Use cases: Public APIs, shared databases
+- Configuration example
+- Lifecycle management
+
+AGENT:
+- Runs on agent's runtime
+- Agent-specific tools
+- Follows agent deployment
+- Use cases: Agent context, session data
+- Configuration example
+
+EDGE:
+- Runs on specific runtime (user-selected)
+- User/machine-specific tools
+- Use cases: Local filesystem, Docker, personal APIs
+- Configuration with Runtime linkage
+- Multiple edge runtimes per workspace
+
+Decision matrix: When to use which type
+Migration scenarios between types
+Performance implications
+
+CODE REFERENCES:
+- packages/common/src/types/mcp-server-run-on.ts
+- packages/backend/src/services/runtime.instance.ts
+
+────────────────────────────────────────────────────────────────────────────
+
+1.8 Roots Management & Filesystem Access
+────────────────────────────────────────────────────────────────────────────
+PRIORITY: HIGH
+STATUS: Not documented
+LOCATION: Create new: runtime-deployment/roots-management.mdx
+
+CONTENT NEEDED:
+- What are roots (filesystem access boundaries)
+- Configuration format: name:path,name:path
+- Environment variable: ROOTS
+- Example: ROOTS=HOME:/Users/alice,PROJECTS:/Users/alice/projects
+- URI format: file:///path
+- How roots are validated
+- How roots are passed to MCP servers
+- Security implications
+- Use cases:
+  * Limiting tool access
+  * Providing context to agents
+  * Workspace isolation
+- SetRootsMessage flow
+- Agent client roots reflection (TODO in code)
+
+CODE REFERENCES:
+- packages/runtime/src/services/tool.service.ts
+- packages/common/src/messages/set-roots.message.ts
+
+================================================================================
+SECTION 2: INCOMPLETE/INACCURATE DOCUMENTATION
+================================================================================
+
+2.1 Core Concepts: Agents
+────────────────────────────────────────────────────────────────────────────
+PRIORITY: HIGH
+STATUS: Recently updated but still incomplete
+LOCATION: core-concepts/agents.mdx
+
+IMPROVEMENTS NEEDED:
+- Add section on AgentServerService implementation
+- Explain MCP server role (runtime acts as MCP server)
+- Document MCP transports (STDIO, STREAM, SSE)
+- Add agent runtime startup sequence
+- Explain capability message (AgentCapabilitiesMessage)
+- Document tool listing process
+- Add section on agent runtime configuration
+- Include AGENT_SERVER_TRANSPORT options
+- Add troubleshooting section
+- Link to MCP protocol specification
+
+────────────────────────────────────────────────────────────────────────────
+
+2.2 Core Concepts: Tools
+────────────────────────────────────────────────────────────────────────────
+PRIORITY: HIGH
+STATUS: High-level only
+LOCATION: core-concepts/tools.mdx
+
+IMPROVEMENTS NEEDED:
+- Add tool discovery process (listTools from MCP servers)
+- Explain tool status (ACTIVE/INACTIVE)
+- Document tool lifecycle:
+  * Discovery
+  * Upsert in database
+  * Status tracking
+  * Capability assignment
+  * Deprecation/removal
+- Add UpdateMcpToolsMessage flow
+- Explain inputSchema (JSON Schema format)
+- Document annotations field (MCP tool hints)
+- Add tool versioning (currently missing)
+- Explain lastSeenAt tracking
+- Add section on tool-to-runtime relationships (mcpToolCapabilities)
+
+────────────────────────────────────────────────────────────────────────────
+
+2.3 Architecture Overview
+────────────────────────────────────────────────────────────────────────────
+PRIORITY: MEDIUM
+STATUS: ✅ COMPLETED (2025-09-30)
+LOCATION: technical-concepts/architecture-overview.mdx (simplified)
+         technical-concepts/architecture-detailed.mdx (original preserved)
+
+COMPLETED:
+- ✅ Added clear component interaction diagrams (3 Mermaid diagrams)
+- ✅ Simplified for readability (reduced from 480+ to ~240 lines)
+- ✅ Added "Quick Architecture" section at top
+- ✅ Linked to detailed sections for each component
+- ✅ Added deployment architecture patterns
+- ✅ Included message flow examples (agent connect, tool execution)
+- ✅ Added scalability section
+- ✅ Documented system boundaries
+
+────────────────────────────────────────────────────────────────────────────
+
+2.4 Installation Guide
+────────────────────────────────────────────────────────────────────────────
+PRIORITY: MEDIUM
+STATUS: Basic setup only
+LOCATION: getting-started/installation.mdx
+
+IMPROVEMENTS NEEDED:
+- Add troubleshooting section with common issues:
+  * Docker not running
+  * Port conflicts (8888, 3000, 4222, 8080)
+  * NATS connection failures
+  * DGraph initialization issues
+  * Volume permission errors
+- Add verification steps after installation
+- Add health check commands
+- Document environment variables
+- Add production vs development setup
+- Include log locations
+- Add clean installation (reset) instructions
+
+────────────────────────────────────────────────────────────────────────────
+
+2.5 Runtime Deployment
+────────────────────────────────────────────────────────────────────────────
+PRIORITY: HIGH
+STATUS: Missing implementation details
+LOCATION: runtime-deployment/runtime.mdx
+
+IMPROVEMENTS NEEDED:
+- Add runtime NPM package usage (@2ly/runtime)
+- Document all environment variables:
+  * RUNTIME_NAME (required)
+  * WORKSPACE_ID
+  * NATS_SERVERS
+  * AGENT_SERVER_TRANSPORT
+  * AGENT_SERVER_TRANSPORT_PORT
+  * ROOTS
+  * GLOBAL_RUNTIME
+  * DEFAULT_TESTING_RUNTIME
+  * AGENT_CAPABILITY
+  * TOOL_CAPABILITY
+- Add Claude Desktop integration example
+- Add systemd service file example
+- Add Docker deployment example
+- Add Kubernetes deployment example
+- Document runtime monitoring
+- Add runtime upgrade process
+
+================================================================================
+SECTION 3: MISSING GUIDES & TUTORIALS
+================================================================================
+
+3.1 Your First Toolflow: Connect Agent
+────────────────────────────────────────────────────────────────────────────
+PRIORITY: HIGH
+STATUS: Needs expansion
+LOCATION: getting-started/your-first-toolflow/connect-agent.mdx
+
+IMPROVEMENTS NEEDED:
+- Add step-by-step Claude Desktop setup
+- Include MCP client configuration JSON
+- Add Python SDK installation steps
+- Include LangGraph example (currently missing)
+- Add verification steps (check runtime in dashboard)
+- Include troubleshooting for common connection issues
+- Add logs review section
+- Link to SDK documentation
+
+────────────────────────────────────────────────────────────────────────────
+
+3.2 Your First Toolflow: Connect Tool
+────────────────────────────────────────────────────────────────────────────
+PRIORITY: HIGH
+STATUS: Needs MCP server examples
+LOCATION: getting-started/your-first-toolflow/connect-tool.mdx
+
+IMPROVEMENTS NEEDED:
+- Add complete MCP server configuration examples:
+  * Filesystem server
+  * GitHub server
+  * Slack server
+  * Database server
+- Include environment variable setup for each
+- Add runOn type selection guide
+- Include tool capability assignment
+- Add verification steps (test tool execution)
+- Include troubleshooting section
+
+────────────────────────────────────────────────────────────────────────────
+
+3.3 Production Deployment Guide
+────────────────────────────────────────────────────────────────────────────
+PRIORITY: CRITICAL
+STATUS: Not documented
+LOCATION: Create new: runtime-deployment/production-deployment.mdx
+
+CONTENT NEEDED:
+- Docker Compose production configuration
+- Environment variables for production
+- SSL/TLS setup
+- Reverse proxy configuration (Nginx)
+- Database backup and restore
+- NATS clustering for HA
+- DGraph replication
+- Log aggregation
+- Monitoring setup (Prometheus, Grafana)
+- Alert configuration
+- Security hardening
+- Performance tuning
+- Scaling strategies
+- Blue-green deployment
+- Rolling updates
+- Disaster recovery
+
+────────────────────────────────────────────────────────────────────────────
+
+3.4 Monitoring & Observability Guide
+────────────────────────────────────────────────────────────────────────────
+PRIORITY: HIGH
+STATUS: ✅ COMPLETED (2025-09-30)
+LOCATION: runtime-deployment/monitoring.mdx
+
+CONTENT NEEDED:
+- Key metrics to monitor:
+  * Runtime health (heartbeat, lastSeenAt)
+  * Tool execution latency
+  * Message queue depth
+  * GraphQL query performance
+  * Database query performance
+  * Error rates
+- Dashboard setup (Grafana)
+- Prometheus integration
+- Log aggregation (ELK stack)
+- NATS monitoring dashboard
+- DGraph monitoring
+- Alert rules
+- Health check endpoints
+- Distributed tracing (OpenTelemetry integration)
+
+────────────────────────────────────────────────────────────────────────────
+
+3.5 Troubleshooting Guide
+────────────────────────────────────────────────────────────────────────────
+PRIORITY: HIGH
+STATUS: Minimal troubleshooting info
+LOCATION: Create new: runtime-deployment/troubleshooting.mdx
+
+CONTENT NEEDED:
+Common Issues:
+- Runtime won't connect
+  * Diagnosis steps
+  * NATS connectivity check
+  * Workspace verification
+  * Log review
+- Tools not appearing in agent
+  * Capability check
+  * MCP server status
+  * Tool status verification
+  * AgentCapabilitiesMessage check
+- Tool execution failures
+  * Routing verification
+  * MCP server subprocess check
+  * Input schema validation
+  * Error log analysis
+- MCP server won't spawn
+  * Command/args verification
+  * Environment variables check
+  * Manual spawn test
+  * Permission issues
+- Heartbeat timeouts
+  * Network latency check
+  * NATS KV status
+  * Runtime logs
+- Performance issues
+  * Latency measurement
+  * Resource usage check
+  * Database query optimization
+  * NATS message queue depth
+
+Diagnostic Commands:
+- Check runtime status
+- Inspect NATS subjects
+- Query DGraph directly
+- View runtime logs
+- Test MCP server manually
+
+────────────────────────────────────────────────────────────────────────────
+
+3.6 Development & Contributing Guide
+────────────────────────────────────────────────────────────────────────────
+PRIORITY: MEDIUM
+STATUS: ✅ COMPLETED (2025-09-30)
+LOCATION: contributing/development-guide.mdx
+
+CONTENT NEEDED:
+Development Setup:
+- Monorepo structure explanation
+- npm workspace commands
+- Development vs production builds
+- Hot reload setup
+- Debugging backend (VS Code config)
+- Debugging frontend
+- Debugging runtime
+
+Code Organization:
+- Package structure
+- Service patterns
+- Repository pattern
+- Message classes
+- Dependency injection (Inversify)
+- GraphQL schema organization
+
+Testing:
+- Unit test setup (Vitest)
+- Integration tests
+- E2E tests
+- Mocking strategies
+- Test data setup
+
+Code Standards:
+- TypeScript guidelines
+- ESLint configuration
+- Prettier rules
+- Commit message format
+- Pull request process
+
+Building Features:
+- Adding new message types
+- Creating new services
+- Adding GraphQL resolvers
+- Frontend component patterns
+- Adding MCP server support
+
+────────────────────────────────────────────────────────────────────────────
+
+3.7 Security Guide
+────────────────────────────────────────────────────────────────────────────
+PRIORITY: HIGH
+STATUS: ✅ COMPLETED (2025-09-30)
+LOCATION: runtime-deployment/security-guide.mdx
+
+CONTENT NEEDED:
+Current Security State:
+- User model exists but not enforced
+- No API authentication
+- No NATS authentication
+- No runtime-to-backend auth
+- Basic bcrypt password hashing
+
+Security Roadmap:
+- JWT authentication for GraphQL API
+- NATS authentication tokens
+- Runtime authentication via shared secrets
+- API rate limiting
+- Audit logging
+- RBAC implementation
+- Secrets management
+- Environment variable encryption
+- SSL/TLS configuration
+- Network segmentation
+
+Best Practices:
+- Secure deployment checklist
+- Secret rotation
+- Least privilege access
+- Input validation
+- SQL injection prevention (N/A - using DGraph)
+- XSS prevention in frontend
+
+────────────────────────────────────────────────────────────────────────────
+
+3.8 AI-Powered MCP Discovery Guide
+────────────────────────────────────────────────────────────────────────────
+PRIORITY: MEDIUM
+STATUS: Not documented (feature exists but hidden)
+LOCATION: Create new: tools/mcp-discovery.mdx
+
+CONTENT NEEDED:
+- What is AI-powered MCP discovery
+- How it works:
+  1. Brave Search for MCP servers
+  2. Azure AI result analysis
+  3. Documentation fetching
+  4. Config extraction via AI
+  5. JSON schema generation
+- Configuration requirements:
+  * AZURE_ENDPOINT
+  * AZURE_API_KEY
+  * BRAVE_SEARCH_API_KEY
+- Usage via GraphQL:
+  * searchMCPServers query
+  * fetchMCPServerConfig query
+- Frontend integration
+- Examples of discovered configs
+- Limitations
+- Cost implications
+- Disabling the feature
+
+CODE REFERENCES:
+- packages/backend/src/services/mcp-auto-config.service.ts
+
+================================================================================
+SECTION 4: MISSING EXAMPLES & RECIPES
+================================================================================
+
+4.1 Complete Integration Examples
+────────────────────────────────────────────────────────────────────────────
+PRIORITY: HIGH
+STATUS: Minimal examples
+LOCATION: Create new section: examples/
+
+FILES NEEDED:
+- examples/langchain-agent.mdx
+- examples/langgraph-workflow.mdx
+- examples/n8n-workflow.mdx
+- examples/claude-desktop.mdx
+- examples/custom-agent.mdx
+- examples/multi-agent.mdx
+- examples/tool-composition.mdx
+
+CONTENT FOR EACH:
+- Complete working code
+- Configuration files
+- Environment setup
+- Step-by-step walkthrough
+- Common issues and solutions
+- Performance considerations
+
+────────────────────────────────────────────────────────────────────────────
+
+4.2 MCP Server Configuration Recipes
+────────────────────────────────────────────────────────────────────────────
+PRIORITY: HIGH
+STATUS: Not documented
+LOCATION: Create new section: recipes/
+
+FILES NEEDED:
+- recipes/filesystem-server.mdx
+- recipes/github-server.mdx
+- recipes/slack-server.mdx
+- recipes/database-server.mdx
+- recipes/docker-server.mdx
+- recipes/custom-api-server.mdx
+- recipes/coded-function.mdx
+
+CONTENT FOR EACH:
+- MCP server description
+- Installation command
+- Configuration (command, args, ENV)
+- runOn type recommendation
+- Required API keys/credentials
+- Available tools
+- Usage examples
+- Troubleshooting
+
+────────────────────────────────────────────────────────────────────────────
+
+4.3 Deployment Scenarios
+────────────────────────────────────────────────────────────────────────────
+PRIORITY: MEDIUM
+STATUS: Not documented
+LOCATION: Create new: deployment-scenarios/
+
+FILES NEEDED:
+- deployment-scenarios/local-development.mdx
+- deployment-scenarios/single-server.mdx
+- deployment-scenarios/multi-server.mdx
+- deployment-scenarios/edge-compute.mdx
+- deployment-scenarios/kubernetes.mdx
+- deployment-scenarios/docker-swarm.mdx
+
+CONTENT FOR EACH:
+- Architecture diagram
+- When to use
+- Infrastructure requirements
+- Configuration files
+- Deployment steps
+- Monitoring setup
+- Scaling approach
+- Cost considerations
+
+================================================================================
+SECTION 5: MISSING TECHNICAL DEEP DIVES
+================================================================================
+
+5.1 MCP Protocol Implementation Details
+────────────────────────────────────────────────────────────────────────────
+PRIORITY: MEDIUM
+STATUS: Not documented
+LOCATION: Create new: technical-concepts/mcp-protocol.mdx
+
+CONTENT NEEDED:
+- MCP protocol version (2024-11-05)
+- 2ly's implementation (@modelcontextprotocol/sdk 1.12)
+- Server-side implementation (AgentServerService)
+- Client-side implementation (ToolServerService)
+- Protocol messages:
+  * initialize
+  * listTools
+  * callTool
+  * roots management
+  * capabilities
+- Transport implementations:
+  * STDIO (StdioServerTransport, StdioClientTransport)
+  * STREAM (StreamableHTTPServerTransport, StreamableHTTPClientTransport)
+  * SSE (SSEServerTransport - legacy)
+- Error handling
+- Tool list change notifications
+- Protocol extensions in 2ly
+
+CODE REFERENCES:
+- packages/runtime/src/services/agent.server.service.ts
+- packages/runtime/src/services/tool.server.service.ts
+
+────────────────────────────────────────────────────────────────────────────
+
+5.2 Observable Pattern & Reactive Updates
+────────────────────────────────────────────────────────────────────────────
+PRIORITY: MEDIUM
+STATUS: Not documented
+LOCATION: Create new: technical-concepts/reactive-architecture.mdx
+
+CONTENT NEEDED:
+- RxJS observables usage throughout codebase
+- Observable patterns:
+  * Service observables
+  * Repository observables
+  * NATS subscription observables
+  * GraphQL subscription observables
+- Push-based vs pull-based updates
+- Why observables vs polling
+- Examples:
+  * Runtime heartbeat observation
+  * Tool capability updates
+  * MCP server config propagation
+- Performance implications
+- Memory management
+- Error handling in observable chains
+
+CODE REFERENCES:
+- packages/backend/src/services/runtime.instance.ts
+- packages/common/src/services/nats.service.ts
+
+────────────────────────────────────────────────────────────────────────────
+
+5.3 Dependency Injection Architecture
+────────────────────────────────────────────────────────────────────────────
+PRIORITY: LOW
+STATUS: Not documented
+LOCATION: Create new: technical-concepts/dependency-injection.mdx
+
+CONTENT NEEDED:
+- Inversify container usage
+- Service registration
+- Singleton vs transient services
+- Service lifecycle
+- Constructor injection
+- Interface-based programming
+- Testing with DI
+- Container configuration
+
+CODE REFERENCES:
+- packages/backend/src/di/container.ts
+- packages/runtime/src/di/container.ts
+
+────────────────────────────────────────────────────────────────────────────
+
+5.4 GraphQL Code Generation
+────────────────────────────────────────────────────────────────────────────
+PRIORITY: LOW
+STATUS: Not documented
+LOCATION: Create new: technical-concepts/code-generation.mdx
+
+CONTENT NEEDED:
+- Schema-first approach
+- Generated types
+- DGraph schema vs Apollo schema
+- Type safety across stack
+- Code generation commands
+- Keeping types in sync
+
+CODE REFERENCES:
+- packages/common/schema/*.graphql
+
+────────────────────────────────────────────────────────────────────────────
+
+5.5 Runtime Rehydration Process
+────────────────────────────────────────────────────────────────────────────
+PRIORITY: MEDIUM
+STATUS: Not documented (implemented but not explained)
+LOCATION: Create new: technical-concepts/runtime-rehydration.mdx
+
+CONTENT NEEDED:
+- What is runtime rehydration
+- Why it's needed (backend restarts)
+- How it works:
+  1. Backend queries all ACTIVE runtimes from DGraph
+  2. Checks NATS KV for heartbeat keys
+  3. Matches RIDs to runtimes
+  4. Rehydrates RuntimeInstance for alive runtimes
+  5. Marks dead runtimes as INACTIVE
+- RID format (id-pid)
+- Heartbeat TTL implications
+- Race conditions handling
+- Testing rehydration
+
+CODE REFERENCES:
+- packages/backend/src/services/runtime.service.ts (rehydrateRuntimes)
+
+================================================================================
+SECTION 6: DOCUMENTATION STRUCTURE IMPROVEMENTS
+================================================================================
+
+6.1 Reorganize Documentation Hierarchy
+────────────────────────────────────────────────────────────────────────────
+CURRENT STRUCTURE (meta.json):
+- Getting Started
+- Core Concepts (3 pages: agents, tools, runtime)
+- Your First Toolflow (4 pages)
+- Agent Integrations (5 pages)
+- Tools (5 pages)
+- Runtime & Deployment (2 pages)
+- Technical Concepts (3 pages)
+- Contributing (4 pages)
+
+PROPOSED STRUCTURE:
+- Getting Started
+  * Welcome
+  * Installation
+  * Quick Start
+  * Your First Agent
+  * Your First Tool
+- Core Concepts
+  * Agents
+  * Tools
+  * Runtime
+  * Workspaces
+  * MCP Protocol
+- Guides
+  * Python SDK
+    - Installation
+    - LangChain Integration
+    - LangGraph Integration
+    - Configuration
+    - Troubleshooting
+  * Agent Integrations
+    - Claude Desktop
+    - LangChain
+    - LangGraph
+    - LangFlow
+    - n8n
+    - Custom Agents
+  * Tool Configuration
+    - MCP Servers
+    - API Integrations
+    - Coded Functions
+    - Tool Discovery
+    - Capabilities
+  * Deployment
+    - Local Development
+    - Production Setup
+    - Runtime Deployment
+    - Monitoring
+    - Security
+    - Troubleshooting
+- API Reference
+  * GraphQL API
+    - Queries
+    - Mutations
+    - Subscriptions
+    - Types
+  * NATS Messages
+  * Python SDK API
+  * Runtime Configuration
+- Technical Concepts
+  * Architecture Overview
+  * NATS Messaging
+  * Database Schema
+  * MCP Protocol
+  * Tool Routing
+  * Runtime Rehydration
+  * Reactive Architecture
+  * Dependency Injection
+- Examples
+  * LangChain Agent
+  * LangGraph Workflow
+  * Multi-Agent System
+  * Custom Integration
+- Recipes
+  * Filesystem Tools
+  * GitHub Integration
+  * Slack Integration
+  * Database Tools
+  * Docker Tools
+- Contributing
+  * Development Setup
+  * Code Standards
+  * Testing
+  * Pull Requests
+
+────────────────────────────────────────────────────────────────────────────
+
+6.2 Add Cross-References & Navigation
+────────────────────────────────────────────────────────────────────────────
+IMPROVEMENTS NEEDED:
+- Add "Prerequisites" section to each guide
+- Link related concepts throughout docs
+- Add "Next Steps" to each page
+- Create breadcrumb navigation
+- Add search functionality improvement
+- Create glossary of terms
+- Add FAQ section
+
+────────────────────────────────────────────────────────────────────────────
+
+6.3 Improve Diagrams & Visualizations
+────────────────────────────────────────────────────────────────────────────
+CURRENT STATE:
+- 2 Mermaid diagrams in documentation
+- 1 diagram in agents.mdx
+- 1 diagram in architecture-overview.mdx (complex, hard to read)
+
+IMPROVEMENTS NEEDED:
+- Simplify architecture overview diagram
+- Add component interaction diagrams
+- Add message flow sequence diagrams:
+  * Runtime registration
+  * Tool execution (GLOBAL, AGENT, EDGE)
+  * Config propagation
+  * Heartbeat monitoring
+- Add deployment architecture diagrams
+- Add entity relationship diagram (DGraph schema)
+- Add tool routing decision flowchart
+- Use consistent diagram style
+- Add diagram legends
+
+────────────────────────────────────────────────────────────────────────────
+
+6.4 Add Code Examples Throughout
+────────────────────────────────────────────────────────────────────────────
+IMPROVEMENTS NEEDED:
+- Every API/SDK method should have example
+- Add copy button to code blocks
+- Include output examples
+- Show error handling in examples
+- Add "Try it yourself" sections
+- Link to runnable examples repository
+
+================================================================================
+SECTION 7: CONTENT QUALITY IMPROVEMENTS
+================================================================================
+
+7.1 Add Conceptual Explanations
+────────────────────────────────────────────────────────────────────────────
+Many pages jump into "how" without explaining "why". Add:
+- Design rationale sections
+- Use case explanations
+- Trade-off discussions
+- When to use vs when not to use
+- Performance implications
+- Security considerations
+
+────────────────────────────────────────────────────────────────────────────
+
+7.2 Improve Readability
+────────────────────────────────────────────────────────────────────────────
+- Break long pages into smaller topics
+- Add more headings and subheadings
+- Use bullet points for lists
+- Add callout boxes (info, warning, tip)
+- Reduce jargon or define terms
+- Add table of contents for long pages
+
+────────────────────────────────────────────────────────────────────────────
+
+7.3 Add Real-World Examples
+────────────────────────────────────────────────────────────────────────────
+Current examples are minimal. Add:
+- End-to-end scenarios
+- Production use cases
+- Performance benchmarks
+- Cost analysis
+- Team workflow examples
+
+────────────────────────────────────────────────────────────────────────────
+
+7.4 Update Outdated Content
+────────────────────────────────────────────────────────────────────────────
+Review and update:
+- Package versions (@2ly/runtime 0.0.4)
+- API endpoints
+- Configuration options
+- Screenshots of frontend
+- Breaking changes from earlier versions
+
+================================================================================
+SECTION 8: MISSING OPERATIONAL DOCUMENTATION
+================================================================================
+
+8.1 Backup & Restore Procedures
+────────────────────────────────────────────────────────────────────────────
+PRIORITY: HIGH
+LOCATION: Create new: runtime-deployment/backup-restore.mdx
+
+CONTENT NEEDED:
+- DGraph backup procedures
+- NATS JetStream backup
+- Configuration backup
+- Workspace export/import
+- Disaster recovery plan
+- RTO/RPO considerations
+- Automated backup scripts
+- Restore testing
+
+────────────────────────────────────────────────────────────────────────────
+
+8.2 Upgrade & Migration Procedures
+────────────────────────────────────────────────────────────────────────────
+PRIORITY: HIGH
+LOCATION: Create new: runtime-deployment/upgrades.mdx
+
+CONTENT NEEDED:
+- Version compatibility matrix
+- Upgrade path (0.0.x → 0.1.x)
+- Breaking changes checklist
+- Database migrations
+- Runtime upgrade (npm package)
+- Backend upgrade (Docker image)
+- Zero-downtime upgrade strategy
+- Rollback procedures
+
+────────────────────────────────────────────────────────────────────────────
+
+8.3 Capacity Planning & Scaling
+────────────────────────────────────────────────────────────────────────────
+PRIORITY: MEDIUM
+LOCATION: Create new: runtime-deployment/capacity-planning.mdx
+
+CONTENT NEEDED:
+- Resource requirements per component
+- Scaling thresholds
+- Horizontal scaling strategies:
+  * Backend instances
+  * Runtime instances
+  * NATS clustering
+  * DGraph sharding
+- Vertical scaling limits
+- Load testing results
+- Cost modeling
+
+────────────────────────────────────────────────────────────────────────────
+
+8.4 Performance Tuning
+────────────────────────────────────────────────────────────────────────────
+PRIORITY: MEDIUM
+LOCATION: Create new: runtime-deployment/performance-tuning.mdx
+
+CONTENT NEEDED:
+- Performance characteristics:
+  * Runtime registration: ~100-200ms
+  * Tool discovery: ~500ms-2s
+  * Tool execution: ~50-500ms + tool time
+  * Config propagation: ~50-100ms
+- Bottlenecks identification
+- Optimization strategies:
+  * Message queue tuning
+  * Database query optimization
+  * Connection pooling
+  * Caching strategies
+  * MCP server pooling
+- Profiling tools
+- Benchmarking guide
+
+================================================================================
+SECTION 9: PRIORITY RANKING
+================================================================================
+
+CRITICAL PRIORITY (Do First):
+1. ✅ NATS Messaging Architecture (1.1) - COMPLETED
+2. ✅ DGraph Database Schema (1.2) - COMPLETED
+3. ✅ GraphQL API Reference (1.3) - COMPLETED
+4. ✅ Runtime Implementation (1.4) - COMPLETED
+5. ✅ Python SDK Guide (1.5) - COMPLETED
+6. ✅ Tool Routing & Execution (1.6) - COMPLETED
+7. Production Deployment Guide (3.3) - TODO
+
+HIGH PRIORITY (Do Soon):
+8. RunOn Types Explanation (1.7) - TODO
+9. Roots Management (1.8) - TODO
+10. ✅ Monitoring & Observability (3.4) - COMPLETED
+11. Troubleshooting Guide (3.5) - TODO
+12. ✅ Security Guide (3.7) - COMPLETED
+13. Complete Integration Examples (4.1) - TODO
+14. MCP Server Recipes (4.2) - TODO
+15. Improve Installation Guide (2.4) - TODO
+16. Improve Agent Integrations (2.1) - TODO
+
+MEDIUM PRIORITY (Important):
+17. AI-Powered Discovery (3.8) - TODO
+18. ✅ Development Guide (3.6) - COMPLETED
+19. MCP Protocol Details (5.1) - TODO
+20. Observable Pattern (5.2) - TODO
+21. Runtime Rehydration (5.5) - TODO
+22. Deployment Scenarios (4.3) - TODO
+23. ✅ Improve Architecture Docs (2.3) - COMPLETED
+
+LOW PRIORITY (Nice to Have):
+24. Dependency Injection (5.3)
+25. Code Generation (5.4)
+26. Diagrams Improvement (6.3)
+27. Content Quality (Section 7)
+
+================================================================================
+SECTION 10: IMMEDIATE ACTION ITEMS (Next Sprint)
+================================================================================
+
+Week 1: Foundation ✅ COMPLETED (2025-09-30)
+──────────────────
+✅ Create technical-concepts/nats-messaging.mdx
+✅ Create technical-concepts/database-schema.mdx
+✅ Create api-reference/ section with GraphQL docs
+
+Week 2: Core Implementation ✅ COMPLETED (2025-09-30)
+────────────────────────────
+✅ Create technical-concepts/runtime-implementation.mdx
+✅ Create technical-concepts/tool-routing.mdx
+□ Enhance core-concepts/runtime.mdx (already good)
+
+Week 3: SDK & Integration ✅ PARTIALLY COMPLETED (2025-09-30)
+──────────────────────────
+✅ Create sdk/ section with Python SDK guide
+□ Create examples/ section with LangChain/LangGraph examples
+□ Enhance agent-integrations/*.mdx
+
+Week 4: Operations ✅ PARTIALLY COMPLETED (2025-09-30)
+──────────────────
+□ Create runtime-deployment/production-deployment.mdx
+✅ Create runtime-deployment/monitoring.mdx
+□ Create runtime-deployment/troubleshooting.mdx
+✅ Create runtime-deployment/security-guide.mdx
+✅ Create contributing/development-guide.mdx
+
+================================================================================
+SECTION 11: TOOLS & AUTOMATION RECOMMENDATIONS
+================================================================================
+
+11.1 Documentation Linting
+──────────────────────────
+- Add markdownlint for consistency
+- Add link checker for broken links
+- Add spell checker
+- Add code block validation
+
+11.2 Auto-Generated Docs
+────────────────────────
+- GraphQL schema → API docs (use graphql-doc-generator)
+- Python SDK → API docs (use Sphinx or pdoc)
+- TypeScript types → Type reference (use TypeDoc)
+- Message classes → Protocol docs
+
+11.3 Documentation Testing
+──────────────────────────
+- Test code examples in CI
+- Validate configuration examples
+- Check external links regularly
+- Ensure diagrams compile
+
+11.4 Version Management
+───────────────────────
+- Version selector in docs UI
+- Changelog with migration guides
+- Deprecation notices
+- Version-specific examples
+
+================================================================================
+SECTION 12: METRICS FOR SUCCESS
+================================================================================
+
+Coverage Metrics:
+- API documentation coverage: 0% → 100%
+- Feature documentation coverage: ~40% → 90%
+- Example coverage: ~10% → 80%
+
+Quality Metrics:
+- Broken links: ? → 0
+- Spelling errors: ? → 0
+- Outdated examples: ? → 0
+- Missing diagrams: Many → Few
+
+User Metrics (to track after improvements):
+- Time to first successful integration
+- Support ticket reduction
+- Documentation satisfaction score
+- Search success rate
+
+================================================================================
+END OF DOCUMENTATION IMPROVEMENT ROADMAP
+================================================================================
+
+Last Updated: 2025-09-30
+Next Review: After completion of Week 1-4 immediate actions
+
+For questions or suggestions, create an issue in the 2ly repository.

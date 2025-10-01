@@ -1,0 +1,328 @@
+---
+title: "Coded Functions"
+description: "Deploy custom JavaScript/Python functions as tools"
+draft: true
+---
+
+Deploy custom JavaScript/Python functions as tools for specialized business logic.
+
+## Overview
+
+Coded functions provide:
+- **Custom Logic**: Implement proprietary business rules
+- **Multi-Language**: JavaScript/TypeScript and Python
+- **Managed Execution**: Sandboxed runtime environments
+- **Standard Interface**: Consistent input/output for agents
+
+## JavaScript Functions
+
+### Basic Function
+
+```javascript
+module.exports = {
+  name: "data_processor",
+  description: "Process and validate data",
+
+  async execute(input) {
+    const { data, rules } = input;
+
+    const processed = data.map(item => ({
+      ...item,
+      processed_at: new Date().toISOString(),
+      valid: validate(item, rules)
+    }));
+
+    return {
+      processed_data: processed,
+      total: processed.length
+    };
+  }
+};
+
+function validate(item, rules) {
+  return rules.every(rule =>
+    item[rule.field] !== undefined
+  );
+}
+```
+
+### With Dependencies
+
+```javascript
+const axios = require('axios');
+const _ = require('lodash');
+
+module.exports = {
+  name: "api_aggregator",
+  description: "Fetch and combine API data",
+
+  async execute(input) {
+    const { endpoints } = input;
+
+    const responses = await Promise.all(
+      endpoints.map(url => axios.get(url))
+    );
+
+    return {
+      combined_data: _.merge(...responses.map(r => r.data))
+    };
+  }
+};
+```
+
+## Python Functions
+
+### Basic Function
+
+```python
+def execute(input_data):
+    """Process dataset and generate statistics"""
+    data = input_data.get('dataset', [])
+
+    # Custom analysis
+    total = sum(item['value'] for item in data)
+    avg = total / len(data) if data else 0
+
+    return {
+        'total': total,
+        'average': avg,
+        'count': len(data)
+    }
+```
+
+### With Libraries
+
+```python
+import pandas as pd
+import numpy as np
+
+def execute(input_data):
+    """Analyze dataset with pandas"""
+    data = input_data.get('dataset', [])
+
+    df = pd.DataFrame(data)
+
+    return {
+        'summary': df.describe().to_dict(),
+        'correlation': df.corr().to_dict(),
+        'missing': df.isnull().sum().to_dict()
+    }
+```
+
+## Configuration
+
+### Creating Function in Dashboard
+
+1. Navigate to **Tools** → **Coded Functions**
+2. Click **Create Function**
+3. Select language (JavaScript/Python)
+4. Enter function code
+5. Define input schema
+6. Test function
+7. Deploy
+
+### Input Schema
+
+Define expected input structure:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "dataset": {
+      "type": "array",
+      "description": "Data to process"
+    },
+    "analysis_type": {
+      "type": "string",
+      "enum": ["basic", "statistical"],
+      "default": "basic"
+    }
+  },
+  "required": ["dataset"]
+}
+```
+
+### Output Format
+
+Always return JSON-serializable data:
+
+```javascript
+return {
+  result: processedData,
+  metadata: {
+    processed_at: new Date().toISOString(),
+    item_count: data.length
+  }
+};
+```
+
+## Dependencies
+
+### JavaScript
+
+Specify npm packages:
+
+```json
+{
+  "dependencies": {
+    "axios": "^1.6.0",
+    "lodash": "^4.17.21",
+    "moment": "^2.29.4"
+  }
+}
+```
+
+### Python
+
+Specify pip packages:
+
+```txt
+pandas>=2.0.0
+numpy>=1.24.0
+requests>=2.31.0
+```
+
+## Error Handling
+
+### JavaScript
+
+```javascript
+async execute(input) {
+  try {
+    const result = await processData(input);
+    return { success: true, result };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+```
+
+### Python
+
+```python
+def execute(input_data):
+    try:
+        result = process_data(input_data)
+        return {'success': True, 'result': result}
+    except Exception as e:
+        return {
+            'success': False,
+            'error': str(e)
+        }
+```
+
+## Best Practices
+
+**Keep Functions Focused**: One function, one purpose
+
+**Validate Input**: Check required fields early
+
+**Handle Errors**: Always catch and return errors gracefully
+
+**Return Structured Data**: Use consistent output format
+
+**Document**: Add clear descriptions and examples
+
+**Test Thoroughly**: Test with various inputs before deploying
+
+## Use Cases
+
+### Data Transformation
+
+```javascript
+module.exports = {
+  name: "csv_to_json",
+  async execute(input) {
+    const csv = input.csv_data;
+    const lines = csv.split('\n');
+    const headers = lines[0].split(',');
+
+    const json = lines.slice(1).map(line => {
+      const values = line.split(',');
+      return headers.reduce((obj, header, i) => {
+        obj[header] = values[i];
+        return obj;
+      }, {});
+    });
+
+    return { json_data: json };
+  }
+};
+```
+
+### Business Rules
+
+```python
+def execute(input_data):
+    """Apply pricing rules"""
+    order = input_data['order']
+    customer = input_data['customer']
+
+    # Custom pricing logic
+    base_price = order['subtotal']
+    discount = 0
+
+    if customer['tier'] == 'premium':
+        discount = base_price * 0.15
+    elif order['quantity'] > 100:
+        discount = base_price * 0.10
+
+    return {
+        'final_price': base_price - discount,
+        'discount_applied': discount
+    }
+```
+
+### API Integration
+
+```javascript
+module.exports = {
+  name: "weather_aggregator",
+  async execute(input) {
+    const { locations } = input;
+
+    const weatherData = await Promise.all(
+      locations.map(async loc => {
+        const resp = await fetch(
+          `https://api.weather.com/v1/${loc}`
+        );
+        return resp.json();
+      })
+    );
+
+    return { weather: weatherData };
+  }
+};
+```
+
+## Troubleshooting
+
+**Function won't deploy:**
+- Check syntax errors
+- Verify dependencies exist
+- Test locally first
+
+**Execution timeout:**
+- Optimize function logic
+- Reduce external API calls
+- Check resource limits
+
+**Dependency errors:**
+- Verify package versions compatible
+- Check for conflicting dependencies
+- Use specific version numbers
+
+**Unexpected output:**
+- Validate input schema matches actual input
+- Add logging for debugging
+- Test with sample data in dashboard
+
+## Next Steps
+
+- [MCP Servers](./mcp-servers) - Standardized tools
+- [API Tools](./api-rest) - REST API integration
+- [Capabilities](./capabilities) - Organize functions

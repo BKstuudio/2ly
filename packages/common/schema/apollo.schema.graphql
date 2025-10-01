@@ -1,0 +1,319 @@
+scalar Date
+
+enum ActiveStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum MCPTransportType {
+  STREAM
+  STDIO
+}
+
+enum MCPServerRunOn {
+  GLOBAL
+  AGENT
+  EDGE
+}
+
+type Infra {
+  nats: String
+}
+
+type System {
+  id: ID!
+  initialized: Boolean!
+  createdAt: Date!
+  updatedAt: Date!
+  defaultWorkspace: Workspace
+}
+
+type Workspace {
+  id: ID!
+  name: String!
+  createdAt: Date!
+  mcpServers: [MCPServer!]
+  mcpTools: [MCPTool!]
+  runtimes: [Runtime!]
+  globalRuntime: Runtime
+  defaultTestingRuntime: Runtime
+}
+
+type MCPServer {
+  id: ID!
+  name: String!
+  description: String!
+  repositoryUrl: String!
+  transport: MCPTransportType!
+  command: String!
+  args: String!
+  ENV: String!
+  serverUrl: String!
+  headers: String
+  tools: [MCPTool!]
+  runOn: MCPServerRunOn
+  runtime: Runtime
+  workspace: Workspace!
+}
+
+type MCPTool {
+  id: ID!
+  name: String!
+  description: String!
+  inputSchema: String!
+  annotations: String!
+  status: ActiveStatus!
+  createdAt: Date!
+  lastSeenAt: Date!
+  mcpServer: MCPServer!
+  runtimes: [Runtime!]
+  workspace: Workspace!
+}
+
+type Runtime {
+  id: ID!
+  name: String!
+  description: String
+  status: ActiveStatus!
+  createdAt: Date!
+  lastSeenAt: Date
+  roots: String
+  capabilities: [String!]
+  mcpToolCapabilities: [MCPTool!]
+  mcpServers: [MCPServer!]
+  workspace: Workspace!
+  hostIP: String
+  hostname: String
+  mcpClientName: String
+}
+
+enum ToolCallStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+type ToolCall {
+  id: ID!
+  toolInput: String!
+  calledAt: Date!
+  completedAt: Date
+  status: ToolCallStatus!
+  toolOutput: String
+  error: String
+  mcpTool: MCPTool!
+  calledBy: Runtime!
+  executedBy: Runtime
+}
+
+type User {
+  id: ID!
+  email: String!
+  createdAt: Date!
+  updatedAt: Date!
+  lastLoginAt: Date
+  adminOfWorkspaces: [Workspace!]
+  membersOfWorkspaces: [Workspace!]
+}
+
+type AuthPayload {
+  user: User!
+  accessToken: String!
+  refreshToken: String!
+  expiresIn: Int!
+}
+
+type RefreshTokenPayload {
+  accessToken: String!
+  expiresIn: Int!
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+  deviceInfo: String
+}
+
+input RefreshTokenInput {
+  refreshToken: String!
+}
+
+input LogoutInput {
+  refreshToken: String!
+}
+
+type Registry {
+  version: String!
+  description: String!
+  servers: [MCPRegistryServer!]
+}
+
+type MCPRegistryServer {
+  _2ly: MCPRegistry2lyMetadata!
+  name: String!
+  description: String!
+  repositoryUrl: String!
+  transport: MCPTransportType!
+  command: String
+  args: String
+  ENV: String
+  serverUrl: String
+  headers: String
+  config: String!
+}
+
+type MCPRegistry2lyMetadata {
+  registryVersion: String!
+}
+
+type Query {
+  workspace: [Workspace!]
+  mcpServers: [MCPServer!]
+  system: System
+  infra: Infra!
+  registry: Registry!
+  searchMCPServers(query: String!): [MCPRegistryServer!]
+  fetchMCPServerConfig(repositoryUrl: String!): MCPRegistryServer
+  workspaceMCPTools(workspaceId: ID!): Workspace
+  isMCPAutoConfigEnabled: Boolean!
+  # Authentication queries
+  me: User
+}
+
+type CallToolResult {
+  success: Boolean!
+  result: String!
+}
+
+type Mutation {
+
+  createMCPServer(
+    name: String!
+    description: String!
+    repositoryUrl: String!
+    transport: MCPTransportType!
+    command: String!
+    args: String!
+    ENV: String!
+    serverUrl: String!
+    headers: String
+    runOn: MCPServerRunOn
+    workspaceId: ID!
+  ): MCPServer!
+  updateMCPServer(
+    id: ID!
+    name: String!
+    description: String!
+    repositoryUrl: String!
+    transport: MCPTransportType!
+    command: String!
+    args: String!
+    ENV: String!
+    serverUrl: String!
+    headers: String
+    runOn: MCPServerRunOn
+  ): MCPServer!
+  linkMCPServerToRuntime(mcpServerId: ID!, runtimeId: ID!): MCPServer!
+  unlinkMCPServerFromRuntime(mcpServerId: ID!): MCPServer!
+  createRuntime(name: String!, description: String!, capabilities: [String!]!, workspaceId: ID!): Runtime!
+  updateRuntime(id: ID!, name: String!, description: String!): Runtime!
+  deleteRuntime(id: ID!): Runtime!
+  deleteMCPTool(id: ID!): MCPTool!
+  deleteMCPServer(id: ID!): MCPServer!
+  linkMCPToolToRuntime(mcpToolId: ID!, runtimeId: ID!): Runtime!
+  unlinkMCPToolFromRuntime(mcpToolId: ID!, runtimeId: ID!): Runtime!
+  initSystem(adminPassword: String!, email: String!): System!
+  updateWorkspace(id: ID!, name: String!): Workspace!
+  setDefaultTestingRuntime(id: ID!, runtimeId: ID!): Workspace!
+  unsetDefaultTestingRuntime(id: ID!): Workspace!
+  setGlobalRuntime(id: ID!, runtimeId: ID!): Workspace!
+  unsetGlobalRuntime(id: ID!): Workspace!
+  updateMCPServerRunOn(mcpServerId: ID!, runOn: MCPServerRunOn!, runtimeId: ID): MCPServer!
+
+  # Playground mutations
+  callMCPTool(toolId: ID!, input: String!): CallToolResult!
+
+  # Authentication mutations
+  registerUser(input: RegisterUserInput!): RegisterUserPayload!
+  loginUser(input: LoginUserInput!): AuthPayload!
+  login(input: LoginInput!): AuthPayload!
+  refreshToken(input: RefreshTokenInput!): RefreshTokenPayload!
+  logout(input: LogoutInput!): Boolean!
+  logoutUser(input: LogoutUserInput!): LogoutPayload!
+}
+
+# Authentication types
+type User {
+  id: ID!
+  email: String!
+  createdAt: Date!
+  lastLoginAt: Date
+}
+
+type AuthTokens {
+  accessToken: String!
+  refreshToken: String!
+}
+
+type AuthPayload {
+  success: Boolean!
+  user: User
+  tokens: AuthTokens
+  errors: [String!]
+}
+
+type RegisterUserPayload {
+  success: Boolean!
+  user: User
+  tokens: AuthTokens
+  errors: [String!]
+}
+
+type RefreshTokenPayload {
+  success: Boolean!
+  accessToken: String
+  errors: [String!]
+}
+
+type LogoutPayload {
+  success: Boolean!
+  errors: [String!]
+}
+
+input RegisterUserInput {
+  email: String!
+  password: String!
+  deviceInfo: String
+}
+
+input LoginUserInput {
+  email: String!
+  password: String!
+  deviceInfo: String
+}
+
+input LoginInput {
+  email: String!
+  password: String!
+  deviceInfo: String
+}
+
+input RefreshTokenInput {
+  refreshToken: String!
+}
+
+input LogoutUserInput {
+  refreshToken: String!
+}
+
+input LogoutInput {
+  refreshToken: String!
+}
+
+type Subscription {
+  workspaces: [Workspace!]
+  runtimes(workspaceId: ID!): [Runtime!]
+  mcpServers(workspaceId: ID!): [MCPServer!]
+  mcpTools(workspaceId: ID!): [MCPTool]
+  toolCalls(workspaceId: ID!): [ToolCall!]
+}

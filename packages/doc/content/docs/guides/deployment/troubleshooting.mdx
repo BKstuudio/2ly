@@ -1,0 +1,476 @@
+---
+title: "Troubleshooting"
+description: "Common issues and solutions"
+draft: true
+---
+
+Common issues and their solutions for 2LY deployments.
+
+## Runtime Issues
+
+### Runtime Won't Start
+
+**Symptom:** Runtime process exits immediately or fails to start
+
+**Diagnostic:**
+```bash
+# Check Node.js version
+node --version  # Should be 22+
+
+# Test runtime manually
+npx @2ly/runtime
+
+# Check for port conflicts
+lsof -i :4222  # NATS port
+```
+
+**Solutions:**
+- Update Node.js to version 22+
+- Check RUNTIME_NAME is set
+- Verify NATS server accessible
+- Check for port conflicts
+
+### Runtime Won't Connect to NATS
+
+**Symptom:** "Connection refused" or timeout errors
+
+**Diagnostic:**
+```bash
+# Check NATS running
+docker ps | grep nats
+
+# Test NATS connection
+telnet localhost 4222
+
+# Check NATS logs
+docker logs 2ly-nats
+```
+
+**Solutions:**
+- Start NATS: `docker-compose up -d nats`
+- Verify NATS_SERVERS URL correct
+- Check firewall not blocking port 4222
+- Verify network connectivity
+
+### Runtime Not Appearing in Dashboard
+
+**Symptom:** Runtime starts but doesn't show in dashboard
+
+**Diagnostic:**
+```bash
+# Check runtime logs
+npx @2ly/runtime 2>&1 | tee runtime.log
+
+# Verify workspace ID
+echo $WORKSPACE_ID
+
+# Check backend connectivity
+curl http://localhost:4000/graphql
+```
+
+**Solutions:**
+- Verify WORKSPACE_ID matches dashboard
+- Check backend running
+- Ensure NATS connection established
+- Verify RUNTIME_NAME unique
+
+## Tool Issues
+
+### No Tools Available
+
+**Symptom:** Agent lists zero tools
+
+**Diagnostic:**
+```bash
+# List runtimes
+curl http://localhost:4000/graphql \
+  -d '{"query": "{ runtimes { name status } }"}'
+
+# Check tool configurations
+# In dashboard: Tools → View configured tools
+```
+
+**Solutions:**
+- Configure tools in dashboard
+- Verify tools assigned to agent
+- Check runtime has required capability
+- Restart runtime after tool changes
+
+### MCP Server Test Fails
+
+**Symptom:** "Test Server" button fails in dashboard
+
+**Diagnostic:**
+```bash
+# Test MCP server locally
+npx @modelcontextprotocol/server-filesystem /tmp
+
+# Check dependencies installed
+npm list @modelcontextprotocol/server-filesystem
+
+# Verify paths exist
+ls -la /path/to/configured/directory
+```
+
+**Solutions:**
+- Verify command and args correct
+- Check paths exist and accessible
+- Install missing MCP server packages
+- Test server manually first
+
+### Tool Execution Timeout
+
+**Symptom:** Tool calls hang or timeout
+
+**Diagnostic:**
+```bash
+# Check runtime resource usage
+docker stats
+
+# Monitor NATS message queue
+nats stream info
+
+# Check tool logs
+npx @2ly/runtime --log-level=debug
+```
+
+**Solutions:**
+- Increase timeout in tool config
+- Check tool not blocking on I/O
+- Verify external APIs responding
+- Monitor resource constraints
+
+### Tool Returns Error
+
+**Symptom:** Tool execution fails with error
+
+**Diagnostic:**
+```bash
+# Enable debug logging
+LOG_LEVEL=debug npx @2ly/runtime
+
+# Check tool arguments
+# Verify input matches tool's schema
+
+# Test tool manually
+npx <mcp-server-command>
+```
+
+**Solutions:**
+- Validate tool arguments match schema
+- Check tool permissions
+- Verify API keys/credentials correct
+- Review tool logs for details
+
+## Agent Issues
+
+### Agent Can't Connect
+
+**Symptom:** Agent fails to connect to runtime
+
+**Diagnostic:**
+```python
+# Test Python SDK connection
+from twoly import TwolyMCP
+
+async with TwolyMCP("test-agent") as mcp:
+    print("Connected!")
+    tools = await mcp.list_tools()
+    print(f"Found {len(tools)} tools")
+```
+
+**Solutions:**
+- Check runtime started
+- Verify RUNTIME_NAME matches
+- Ensure @2ly/runtime installed
+- Check network connectivity
+
+### Agent Gets Wrong Tools
+
+**Symptom:** Agent sees unexpected tool list
+
+**Diagnostic:**
+- Check capability assignments in dashboard
+- Verify agent connected to correct runtime
+- Review tool filters and permissions
+
+**Solutions:**
+- Update capability assignments
+- Check runOn types configured correctly
+- Verify workspace ID correct
+
+## Network Issues
+
+### Frontend Can't Connect to Backend
+
+**Symptom:** Dashboard shows connection error
+
+**Diagnostic:**
+```bash
+# Test backend
+curl http://localhost:4000/graphql
+
+# Check backend logs
+docker logs 2ly-backend
+
+# Verify CORS config
+# Check browser console for CORS errors
+```
+
+**Solutions:**
+- Start backend: `npm run start:backend`
+- Check VITE_API_URL correct
+- Configure CORS_ORIGIN if needed
+- Verify no proxy interfering
+
+### NATS Connection Drops
+
+**Symptom:** Intermittent disconnections
+
+**Diagnostic:**
+```bash
+# Monitor NATS
+nats server info
+
+# Check network stability
+ping nats-server
+
+# Review NATS logs
+docker logs -f 2ly-nats
+```
+
+**Solutions:**
+- Check network stability
+- Increase NATS timeouts
+- Verify no firewall dropping connections
+- Consider NATS clustering
+
+## Database Issues
+
+### DGraph Connection Failed
+
+**Symptom:** Backend can't connect to DGraph
+
+**Diagnostic:**
+```bash
+# Check DGraph running
+docker ps | grep dgraph
+
+# Test DGraph connection
+curl http://localhost:8080/health
+
+# Check DGraph logs
+docker logs 2ly-dgraph
+```
+
+**Solutions:**
+- Start DGraph: `docker-compose up -d dgraph`
+- Verify DGRAPH_URL correct
+- Check port 8080/9080 not blocked
+- Review DGraph logs for errors
+
+### Database Migration Failed
+
+**Symptom:** Schema migration errors on startup
+
+**Diagnostic:**
+```bash
+# Check migration status
+npm run db:status
+
+# Review migration logs
+npm run db:migrate 2>&1 | tee migration.log
+```
+
+**Solutions:**
+- Drop and recreate database (dev only)
+- Run migrations manually
+- Check DGraph version compatibility
+
+## Performance Issues
+
+### Slow Tool Execution
+
+**Symptom:** Tools take long to execute
+
+**Diagnostic:**
+```bash
+# Monitor resource usage
+docker stats
+
+# Check NATS latency
+nats rtt
+
+# Profile tool execution
+LOG_LEVEL=debug npx @2ly/runtime
+```
+
+**Solutions:**
+- Increase runtime resources
+- Optimize tool implementation
+- Check network latency
+- Consider edge deployment
+
+### High Memory Usage
+
+**Symptom:** Runtime consuming excessive memory
+
+**Diagnostic:**
+```bash
+# Check memory usage
+docker stats runtime
+
+# List running processes
+ps aux | grep runtime
+```
+
+**Solutions:**
+- Set memory limits in Docker
+- Check for memory leaks in tools
+- Restart runtime periodically
+- Reduce concurrent tool executions
+
+## Docker Issues
+
+### Container Won't Start
+
+**Symptom:** Docker container exits immediately
+
+**Diagnostic:**
+```bash
+# Check container logs
+docker logs 2ly-backend
+docker logs 2ly-runtime
+
+# Verify Docker running
+docker info
+
+# Check Docker Compose
+docker-compose config
+```
+
+**Solutions:**
+- Fix docker-compose.yml syntax errors
+- Ensure all required env vars set
+- Check port availability
+- Verify image built correctly
+
+### Port Already in Use
+
+**Symptom:** "Port already allocated" error
+
+**Diagnostic:**
+```bash
+# Find process using port
+lsof -i :8888  # Frontend
+lsof -i :4000  # Backend
+lsof -i :4222  # NATS
+
+# Kill process if needed
+kill <PID>
+```
+
+**Solutions:**
+- Stop conflicting process
+- Change port in configuration
+- Use different port mapping
+
+## Development Issues
+
+### npm install Fails
+
+**Symptom:** Dependency installation errors
+
+**Diagnostic:**
+```bash
+# Clear npm cache
+npm cache clean --force
+
+# Remove node_modules
+rm -rf node_modules package-lock.json
+
+# Check Node version
+node --version
+```
+
+**Solutions:**
+- Use Node.js 22+
+- Clear cache and reinstall
+- Check network connectivity
+- Try yarn instead
+
+### Build Fails
+
+**Symptom:** Compilation errors during build
+
+**Diagnostic:**
+```bash
+# Run build with verbose output
+npm run build --verbose
+
+# Check TypeScript errors
+npm run type-check
+
+# Review build logs
+```
+
+**Solutions:**
+- Fix TypeScript errors
+- Update dependencies
+- Clear build cache
+- Check for syntax errors
+
+## Logs & Debugging
+
+### Enable Debug Logging
+
+```bash
+# Runtime
+LOG_LEVEL=debug npx @2ly/runtime
+
+# Backend
+LOG_LEVEL=debug npm run start:backend
+
+# All services via Docker
+docker-compose up --build
+```
+
+### View Logs
+
+```bash
+# Docker logs
+docker logs -f 2ly-backend
+docker logs -f 2ly-runtime
+docker logs -f 2ly-nats
+
+# Application logs
+tail -f logs/runtime.log
+tail -f logs/backend.log
+```
+
+### Common Log Patterns
+
+**Connection refused:** NATS not running or wrong URL
+
+**Authentication failed:** Credentials incorrect (future feature)
+
+**Tool not found:** Tool not configured or wrong name
+
+**Timeout:** External service not responding
+
+## Getting Help
+
+1. Check this troubleshooting guide
+2. Review [GitHub Issues](https://github.com/2ly-ai/2ly/issues)
+3. Enable debug logging and collect logs
+4. Create issue with:
+   - Symptoms and error messages
+   - Diagnostic command outputs
+   - Configuration (redact secrets)
+   - Steps to reproduce
+
+## Next Steps
+
+- [Environment Variables](./environment-variables) - Configuration reference
+- [Security](../../deployment/security) - Secure deployment
+- [Monitoring](../../runtime-deployment/monitoring) - Track health

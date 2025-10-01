@@ -1,0 +1,65 @@
+---
+title: "Issues & Pull Requests"
+description: "Guidelines for contributing"
+draft: false
+---
+
+How to contribute through issues and pull requests.
+
+## Creating Issues
+
+### Bug Reports
+Include:
+- Clear description
+- Steps to reproduce
+- Expected vs actual behavior
+- Environment (OS, Node version)
+- Logs/screenshots
+
+### Feature Requests
+Include:
+- Use case and why needed
+- Proposed solution
+- Alternatives considered
+
+## Pull Requests
+
+### Before Creating PR
+1. Fork and create feature branch
+2. Run tests and linting
+3. Follow code style
+4. Update docs if needed
+
+### Branch Naming
+- `feature/add-authentication`
+- `fix/memory-leak`
+- `docs/update-guide`
+
+### Commit Messages
+Follow [Conventional Commits](https://www.conventionalcommits.org/):
+```
+feat: add user authentication
+fix: resolve memory leak in agent pool
+docs: update installation guide
+```
+
+### PR Description
+- What changes were made
+- Why changes are needed
+- How to test
+- Related issues
+
+### Review Process
+- Address review comments
+- Keep commits clean
+- Tests must pass
+- Documentation must be updated
+
+## Code Standards
+
+- ESLint and Prettier configured
+- TypeScript strict mode
+- Write tests for new features
+- Keep functions small and focused
+
+See [Development Setup](./development-setup) for environment setup.

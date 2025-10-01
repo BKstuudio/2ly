@@ -1,0 +1,33 @@
+{
+  "mcpServers": {
+    "2ly-stdio": {
+      "command": "node",
+      "args": [
+        "/Users/ben/web/2ly/packages/runtime/dist/index.js"
+      ],
+      "env": {
+        "NATS_SERVERS": "nats://localhost:4222",
+        "RUNTIME_NAME": "2ly-inspector",
+        "ROOTS": "tmp:/tmp"
+      }
+    },
+    "2ly-stream": {
+      "type": "streamable-http",
+      "url": "http://localhost:3001/mcp"
+    },
+    "2ly-sse": {
+      "type": "sse",
+      "url": "http://localhost:3001/sse"
+    },
+    "2ly-saas": {
+      "command": "node",
+      "args": [
+        "/Users/ben/web/2ly/packages/runtime/dist/index.js"
+      ],
+      "env": {
+        "NATS_SERVERS": "nats://nats.2ly.ai",
+        "RUNTIME_NAME": "2ly-saas"
+      }
+    }
+  }
+}

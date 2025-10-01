@@ -1,0 +1,131 @@
+---
+title: "Connect a Tool"
+description: "Add tools to your agent through the 2LY using a MCP server"
+draft: false
+---
+
+
+## Step 1: Access Tool Configuration
+
+Continuing from agent connection, the workflow guides you to tool configuration:
+
+1. **Tool Category Selection**: You'll see three options in the ongoing workflow:
+   - **MCP Server** - For standardized tool servers
+   - **API** - For REST API integrations  
+   - **Coded Function** - For custom code
+
+## Step 2: Select MCP Server
+
+For this tutorial, we'll use an MCP Server as it provides the most standardized tool interface.
+
+### Choose MCP Server Category
+
+1. **Click "MCP Server"** from the tool category selection
+2. **MCP Server Search Screen**: You'll land on the MCP server discovery and configuration screen
+3. **Three Options Available**:
+   - **Browse Popular Servers**: Official Anthropic Catalog
+   - **Features MCP**: Pre-configured popular MCP Servers
+   - **Add Manually**: Configure your own MCP server
+
+### Select Manual Configuration
+
+1. **Click "Add Manually"**: This opens the manual MCP server configuration interface
+2. **Server Configuration Form**: You'll see fields for server details
+
+## Step 3: Configure GitHub MCP Server
+
+Fill in the configuration form with these details:
+
+**Server Details:**
+- **Server Name**: `github-mcp`
+- **Display Name**: `GitHub Operations`
+- **Server URL**: `https://github.com/modelcontextprotocol/servers/tree/main/src/github`
+- **Command**: `npx`
+- **Arguments**: `@modelcontextprotocol/server-github`
+- **GitHub Personal Access Token**: Enter your token with repository permissions
+
+## Step 4: Test the MCP Server
+
+### Run Configuration Test
+
+1. **Test Server**: Click "Test Server Configuration" 
+2. **Connection Test**: The system will setup and test the GitHub MCP server automatically
+
+### Test Results
+
+If successful, you'll see:
+- **Connection Status**: Connected successfully
+- **Available Tools**: List of GitHub operations available (create_repository, get_repository, create_issue, etc.)
+- **Tool Selection**: Visualize and select which tools to enable
+
+
+## Step 5: Tool Configuration Complete
+
+### Configuration Summary
+
+Congratulations ! Your GitHub MCP server configuration is now complete with:
+
+✅ **Server Details**: Name, description, and URL configured
+✅ **Command Setup**: NPX command and arguments specified  
+✅ **Authentication**: GitHub token environment variable configured
+✅ **Testing Ready**: Configuration ready for deployment
+
+### Next: Deploy and Run
+
+Your tool configuration is complete! The next steps involve:
+
+1. **Select tools*: Pick the tools you'd like to include in your toolset
+2. **Linking to Agent**: Connect the toolset to your agent
+
+These deployment and linking steps are covered in detail in the next section: **[Deploy and Run](/your-first-toolflow/deploy-run)**.
+
+
+## Common Configuration Patterns
+
+### Popular MCP Servers
+
+**Alternative servers to test** using the same configuration process:
+
+**Filesystem MCP Server:**
+- Command: `npx`
+- Arguments: `@modelcontextprotocol/server-filesystem /data`
+- Use Case: File operations and management
+
+**SQLite MCP Server:**
+- Command: `npx`
+- Arguments: `@modelcontextprotocol/server-sqlite --db-path=/data/database.db`
+- Environment: `DATABASE_PATH=/data/database.db`
+- Use Case: Database operations
+
+**Web Search MCP Server:**
+- Command: `npx`
+- Arguments: `@modelcontextprotocol/server-brave-search`
+- Environment: `BRAVE_API_KEY=${BRAVE_TOKEN}`
+- Use Case: Web search capabilities
+
+### Environment Variable Management
+
+For secure credential handling:
+
+1. **Secure Storage**: 2LY securely manages environment variables (encrypted, never in plain text)
+2. **Runtime Injection**: Variables are injected at container startup
+3. **Variable Scope**: Can be scoped to specific tools or globally available
+
+## Next Steps
+
+Your tool configuration is now complete! Next steps:
+
+1. **[Deploy and Run](/your-first-toolflow/deploy-run)** - Deploy, and link your configured tool to your agent
+2. **Add More Tools** - Configure additional MCP servers, APIs, or coded functions using the same process
+3. **Create Tool Combinations** - Build capabilities that combine multiple tools
+4. **Monitor Tool Usage** - Track performance and optimize configurations
+
+## Key Points to Remember
+
+- **UI-First Configuration**: All tool setup happens through the web interface
+- **Modular Architecture**: Tools are configured separately from agents
+- **Secure Credential Management**: Environment variables keep API keys and tokens safe
+- **Standardized Interface**: MCP protocol ensures consistent tool integration
+- **Ready for Deployment**: Configured tools are ready for deployment
+
+Your GitHub MCP server is configured and ready for deployment and agent integration!

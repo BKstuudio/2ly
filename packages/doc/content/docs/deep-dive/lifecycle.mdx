@@ -1,0 +1,259 @@
+---
+title: "Lifecycle Management"
+description: "Component lifecycle orchestration in 2LY's distributed runtime architecture"
+draft: true
+---
+
+
+## Overview
+
+2ly operates as a distributed system where the backend orchestrator manages multiple runtime instances that can act as either Tool Runtimes or Agent Runtimes. The system uses NATS as a message bus for communication and DGraph as the persistent data store.
+
+The lifecycle consists of five main stages:
+
+1. **Initialization** - Backend starts and rehydrates existing runtimes
+2. **Registration** - Runtimes connect to the backend and establish identity
+3. **Health & Heartbeats** - Continuous monitoring and health checking
+4. **Execution** - Runtime capabilities and MCP server management
+5. **Teardown** - Graceful shutdown and cleanup
+
+## Backend Lifecycle
+
+The backend orchestrator is responsible for managing runtime instances, maintaining their state, and coordinating communication between different system components.
+
+### Initialization and Rehydration
+
+When the backend starts, it performs a rehydration process to restore the state of previously active runtimes:
+
+```mermaid
+sequenceDiagram
+    participant Backend as Backend Service
+    participant DGraph as DGraph Database
+    participant NATS as NATS Bus
+    participant Instance as Runtime Instance Service
+
+    Note over Backend: Backend Startup
+    Backend->>DGraph: Fetch all active runtimes
+    Backend->>NATS: Get all heartbeat keys
+    Backend->>Backend: Compare DB runtimes with heartbeat keys
+
+    alt Runtime has heartbeat
+        Backend->>Instance: Create instance service
+    else Runtime missing heartbeat
+        Backend->>DGraph: Mark runtime as inactive
+    end
+
+    Backend->>NATS: Subscribe to runtime.connect
+    Note over Backend: Ready to accept new connections
+```
+
+### Runtime Instance Service
+
+Each runtime instance is managed by a dedicated service that handles:
+
+- **Heartbeat Monitoring**: Subscribe to instance heartbeat and disconnect when heartbeat is gone
+- **Message Handling**: Processes runtime-specific messages and commands
+- **Capability Updates**: Manages MCP server configurations and tool capabilities
+- **Graceful Shutdown**: Handles runtime disconnection and cleanup
+
+```mermaid
+sequenceDiagram
+    participant Instance as Runtime Instance Service
+    participant NATS as NATS Bus
+    participant DGraph as DGraph Database
+
+    Note over Instance: Runtime Instance Lifecycle
+
+    loop Heartbeat Monitoring
+        NATS->>Instance: runtime.{RID}.heartbeat
+        Instance->>Instance: Update last seen timestamp
+        Instance->>DGraph: Update last seen value
+    end
+
+    
+    Note over Instance: Handling runtime specific messages
+
+    Instance->>NATS: Subscribe to runtime.{RID}.*
+
+    Instance->>Instance: Handle message
+```
+
+Runtime specific messages includes
+
+* **Set Capabilities**: Set the capabilities (`tool`, `agent`) of the Runtime
+* **Set Roots**: Set the roots available for a runtime acting as MCP Client (spwaning MCP Servers)
+* **Set Default Testing Runtime**: set this runtime as the default one for testing MCP Servers in workpace
+* **Set Global Runtime**: set the runtime as the global one for the workspace
+
+## Runtime Lifecycle
+
+Runtime instances can have multiple capabilities:
+
+* **tool**: (default: true) When a Runtime has the tool capabilities it means that it can host tool execution such as spawing MCP Servers and call their tools in response to a Tool Call on the bus
+* **agent**: (default: auto) When a Runtime has the agent capabilities it means it can have Tool Capabilities linked to it and therefore will be able to provide these tools to an Agent when the runtime is executed as MCP Client.
+
+### Connection and Registration
+
+Runtimes establish their identity and capabilities during the connection process:
+
+```mermaid
+sequenceDiagram
+    participant Runtime as Runtime Process
+    participant Identity as Identity Service
+    participant NATS as NATS Bus
+    participant Backend as Backend Orchestrator
+    participant DGraph as DGraph Database
+
+    Note over Runtime: Runtime Initialization
+    Runtime->>Identity: Initialize identity (name, workspace, PID) and metadata (hostname, ...)
+    Runtime->>NATS: Send RuntimeConnectMessage
+    Note right of Runtime: { name, pid, hostIP, hostname, workspaceId }
+    
+    NATS->>Backend: Forward connection request
+    Backend->>DGraph: Create/update runtime record
+    Backend->>Backend: Generate RID<br><InstanceId>-<PID>
+    Backend->>NATS: Send AckMessage<br>return InstanceID and RID and workspaceId
+    NATS->>Runtime: Forward AckMessage
+    
+    Runtime->>Identity: Set runtime RID and workspaceId
+    Note over Runtime: Connection established
+```
+
+### Health Monitoring and Heartbeats
+
+Runtimes maintain their connection through regular heartbeat messages:
+
+```mermaid
+sequenceDiagram
+    participant Runtime as Runtime Process
+    participant Health as Health Service
+    participant NATS as NATS Bus
+
+    Note over Runtime: Health Service Initialization
+    Runtime->>Health: Start health monitoring
+    Health->>NATS: Send initial HeartbeatMessage
+    Health->>Health: Set interval timer (30 seconds)
+
+    loop Every 30 seconds
+        Health->>Health: Generate heartbeat data
+        Health->>NATS: Publish HeartbeatMessage
+    end
+
+    Note over Runtime: Graceful Shutdown
+    Runtime->>Health: Stop health monitoring
+    Health->>NATS: Kill Heartbeat
+    Health->>Health: Clear heartbeat interval
+```
+
+### Reconnection Strategy
+
+Runtimes implement an exponential backoff strategy for reconnection:
+
+```mermaid
+sequenceDiagram
+    participant Main as Main Runtime Service
+
+    Note over Main: Connection Failure
+    Main->>Main: Increment failure counter
+    Main->>Main: Shutdown all services
+    Main->>Main: Calculate backoff time
+    Main->>Main: Wait with exponential backoff
+    Main->>Main: Restart all services
+    
+    alt Connection Successful
+        Main->>Main: Reset failure counter
+        Note over Main: Normal operation resumed
+    else Connection Failed
+        Note over Main: Repeat backoff cycle
+    end
+```
+
+## Execution and Capability Management
+
+### Tool Runtime Execution
+
+Tool runtimes manage MCP servers and provide tool execution capabilities:
+
+```mermaid
+sequenceDiagram
+    participant ToolRuntime as Tool Runtime
+    participant ToolService as Tool Service
+    participant NATS as NATS Bus
+    participant Backend as Backend Orchestrator
+    participant MCPServer as MCP Server
+    participant MCPClient as MCP Client
+
+    Note over ToolRuntime: Tool Runtime Initialization
+    ToolRuntime->>ToolService: Start tool service
+    ToolService->>NATS: Subscribe to configuration updates
+    
+    Backend->>NATS: Publish MCP server configuration
+    NATS->>ToolService: Forward configuration
+    ToolService->>MCPServer: Start MCP server process
+    MCPServer->>ToolService: Register tools and capabilities
+    
+    ToolService->>NATS: Publish tool capabilities
+    NATS->>Backend: Forward capabilities
+    Backend->>Backend: Update runtime capabilities in DB
+
+    Note over ToolRuntime: Tool Execution
+    MCPClient->>NATS: Request tool execution
+    NATS->>ToolService: Forward tool request
+    ToolService->>MCPServer: Execute tool
+    MCPServer->>ToolService: Return result
+    ToolService->>NATS: Send execution result
+    NATS->>MCPClient: Forward result
+```
+
+### Agent Runtime Execution
+
+Agent runtimes provide MCP server capabilities for agent communication:
+
+```mermaid
+sequenceDiagram
+    participant AgentRuntime as Agent Runtime
+    participant AgentService as Agent Service
+    participant ToolServerService as Tool Server Service
+    participant NATS as NATS Bus
+    participant Backend as Backend Orchestrator
+    participant MCPClient as MCP Client
+
+    Note over AgentRuntime: Agent Runtime Initialization
+    AgentRuntime->>AgentService: Start agent service
+    
+    alt Transport Type: STDIO
+        AgentService->>AgentService: Setup STDIO transport
+    else Transport Type: HTTP
+        AgentService->>AgentService: Setup HTTP transport
+        AgentService->>AgentService: Start Fastify server
+    end
+    
+    Backend->>NATS: Publish agent capabilities
+    NATS->>AgentService: Forward capabilities
+    AgentService->>AgentService: Update available tools
+
+    Note over AgentRuntime: Agent Communication
+    MCPClient->>AgentService: MCP request (STDIO/HTTP)
+    AgentService->>AgentService: Handle MCP protocol
+    
+    alt List Tools Request
+        AgentService->>AgentService: Return available tools list
+        AgentService->>MCPClient: Tools list response
+    else Call Tool Request
+        AgentService->>NATS: Publish AgentCallMCPToolMessage
+        NATS->>ToolServerService: Forward tool call
+        ToolServerService->>ToolServerService: Execute tool
+        ToolServerService->>NATS: Send AgentCallResponseMessage
+        NATS->>AgentService: Forward response
+        AgentService->>MCPClient: Tool execution result
+    end
+```
+
+## Teardown and Cleanup
+
+### Graceful Shutdown Process
+
+Both runtimes and the backend implement graceful shutdown procedures which stops the services and avoid memory leaks.
+
+- **Runtime processes** announce their disconnection by killing their heartbeat, which is then picked-up by the backend in order to mark runtime as inactive
+- **Backend process** do not announce its disconnection has it should have an auto-restart mechanism in place and is able to re-hydrate runtimes at startup time

@@ -1,0 +1,1 @@
+export type MCP_SERVER_RUN_ON = 'GLOBAL' | 'AGENT' | 'EDGE';

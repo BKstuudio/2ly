@@ -1,0 +1,9 @@
+{
+  "title": "Technical Concepts",
+  "pages": [
+    "architecture-overview",
+    "architecture",
+    "lifecycle",
+    "agent-tool-patterns"
+  ]
+}

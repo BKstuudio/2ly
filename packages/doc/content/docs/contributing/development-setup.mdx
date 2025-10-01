@@ -1,0 +1,72 @@
+---
+title: "Development Setup"
+description: "Set up your development environment"
+draft: false
+---
+
+Set up a local environment for contributing to 2LY.
+
+## Prerequisites
+
+- Node.js 22+
+- npm
+- Git
+- Docker
+
+## Setup
+
+### 1. Fork and Clone
+
+```bash
+git clone https://github.com/YOUR_USERNAME/2ly.git
+cd 2ly
+```
+
+### 2. Install and Start
+
+```bash
+npm install
+npm run start
+```
+
+Application runs at http://localhost:8888
+
+## Workflow
+
+### Create Branch
+
+```bash
+git checkout -b feature/your-feature-name
+```
+
+### Run Tests
+
+```bash
+npm run test
+npm run lint
+```
+
+### Build
+
+```bash
+npm run build
+```
+
+## Project Structure
+
+```
+packages/
+  backend/      # GraphQL API
+  frontend/     # React UI
+  runtime/      # MCP runtime
+  common/       # Shared code
+  twoly/        # Python SDK
+```
+
+## Troubleshooting
+
+- **Port conflicts**: Ports 8888, 4000, 4222 must be available
+- **Docker**: Ensure Docker is running
+- **Node version**: Use Node.js 22+
+
+See [Contributing Guidelines](./issues-prs) for more.

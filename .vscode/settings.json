@@ -1,0 +1,13 @@
+{
+  "editor.formatOnSave": true,
+  "files.exclude": {
+    "packages/vscode-extension/out": false, // set this to true to hide the "out" folder with the compiled JS files
+    "packages/vscode-extension/dist": false // set this to true to hide the "dist" folder with the compiled JS files
+  },
+  "search.exclude": {
+    "packages/vscode-extension/out": true, // set this to false to include "out" folder in search results
+    "packages/vscode-extension/dist": true // set this to false to include "dist" folder in search results
+  },
+  // Turn off tsc task auto detection since we have the necessary tasks as npm scripts
+  "typescript.tsc.autoDetect": "off"
+}

@@ -1,0 +1,47 @@
+---
+title: "Tools"
+description: "Understanding tools in 2LY"
+draft: false
+---
+
+Tools are services that agents invoke to interact with external systems. Configure once in 2LY, use across all agents.
+
+## Tool Types
+
+### 1. MCP Servers
+Pre-built tools following the Model Context Protocol standard. These are production-ready implementations maintained by the community, providing standardized interfaces for common integrations.
+
+**Examples:** Filesystem, GitHub, PostgreSQL, Slack, Brave Search
+
+### 2. API Integrations
+Turn any REST API into a tool by wrapping HTTP endpoints. Configure authentication, request parameters, and response handling through the dashboard without writing code.
+
+**Use for:** Internal APIs, third-party services, legacy systems, webhook consumers
+
+### 3. Coded Functions
+Deploy custom JavaScript or Python code directly as tools. Write proprietary business logic, data transformations, or specialized operations that don't fit standard APIs.
+
+**Use for:** Business rules, data validation, custom calculations, workflow orchestration
+
+## How Tools Work
+
+When an agent invokes a tool:
+1. Agent calls tool via MCP
+2. Request routed through NATS
+3. Runtime executes tool
+4. Result returns to agent
+
+Tools run anywhere: local, cloud, or edge.
+
+## Benefits
+
+- **Reusable**: Configure once, use across all agents
+- **Consistent**: Same behavior for all agents
+- **Centralized**: Manage in dashboard, not in code
+- **Secure**: Centralized auth, no credential distribution
+
+## Next Steps
+
+- [Connect Tool](/your-first-toolflow/connect-tool) - Add your first tool
+- [Agents](/core-concepts/agents) - How agents use tools
+- [Runtime](/core-concepts/runtime) - Tool execution environments
