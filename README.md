@@ -5,7 +5,7 @@
 [![Docker](https://img.shields.io/badge/docker-required-blue.svg)](https://docker.com/)
 [![Development Status](https://img.shields.io/badge/status-beta-orange.svg)](https://github.com/AlpinAI/2ly/releases)
 
-**One Platform. Any agent. All tools.*
+**One Platform. Any agent. All tools.**
 
 2LY is an open source platform for AI Tools connectivity within or across any agent framework or environment.
 It provides a central tools registry with embedded runtimes, enabling unified management and observability across all agent-to-tool interactions. By decoupling tool infrastructure from agent logic, 2LY eliminates fragmented integrations and gives users control over their AI tool ecosystem. The platform supports interoperable protocols including Model Context Protocol (MCP), with REST APIs and custom functions coming soon.
