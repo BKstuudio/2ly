@@ -5,26 +5,10 @@
 [![Docker](https://img.shields.io/badge/docker-required-blue.svg)](https://docker.com/)
 [![Development Status](https://img.shields.io/badge/status-beta-orange.svg)](https://github.com/AlpinAI/2ly/releases)
 
-**AI Tools Platform. Connect any agent to any tool centrally.**
+**One Platform. Any agent. All tools.*
 
-## Core Problem
-
-AI development suffers from tool fragmentation and poor visibility. Each framework has different tool interfaces, requiring duplicate integration work. Deploying the same tool across LangChain, Langflow, and n8n means building separate connectors. 
-
-Meanwhile, enterprises have no centralized way to monitor tool usage, optimize costs, or understand agent-tool relationships across their systems.
-
-## How 2LY Solves It
-
-By decoupling agent logic from tool management, we provide a unified layer to:
-
-- **Support** any framework, such as LangChain, Langflow, n8n, or your custom solution
-- **Connect** all agents to MCP servers, APIs, and custom tools universally
-- **Deploy** anywhere - self-hosted, cloud, or hybrid with distributed runtimes
-- **Manage** tool deployment, monitoring, and scaling independently from agent logic
-- **Monitor** all agent-tool interactions with comprehensive observability
-- **Optimize** tool efficiency and costs through context engineering and analytics
-
-Empowering AI builders to focus on agent logic while 2LY handles the tool infrastructure.
+2LY is an open source platform for AI Tools connectivity within or across any agent framework or environment.
+It provides a central tools registry with embedded runtimes, enabling unified management and observability across all agent-to-tool interactions. By decoupling tool infrastructure from agent logic, 2LY eliminates fragmented integrations and gives users control over their AI tool ecosystem. The platform supports interoperable protocols including Model Context Protocol (MCP), with REST APIs and custom functions coming soon.
 
 ## Quick Start
 
