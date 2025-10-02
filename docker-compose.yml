@@ -82,9 +82,7 @@ services:
 
   # 2LY Backend
   backend:
-    build:
-      context: ./
-      dockerfile: packages/backend/Dockerfile
+    image: ghcr.io/alpinai/backend:latest
     container_name: 2ly-backend
     environment:
       - NODE_ENV=production
@@ -113,9 +111,7 @@ services:
 
   # 2LY Tool Runtime
   main-runtime:
-    build:
-      context: ./
-      dockerfile: packages/runtime/Dockerfile
+    image: ghcr.io/alpinai/runtime:latest
     container_name: 2ly-main-runtime
     environment:
       - NATS_SERVERS=nats:4222
@@ -135,11 +131,7 @@ services:
 
   # 2LY Frontend
   frontend:
-    build:
-      context: ./
-      dockerfile: packages/frontend/Dockerfile
-      args:
-        - BUILD_MODE=development
+    image: ghcr.io/alpinai/frontend:latest
     container_name: 2ly-frontend
     ports:
       - 8888:80
@@ -149,9 +141,7 @@ services:
 
   # 2LY Doc
   doc:
-    build:
-      context: ./packages/doc
-      dockerfile: Dockerfile
+    image: ghcr.io/alpinai/doc:latest
     container_name: 2ly-doc
     ports:
       - 3010:3000
