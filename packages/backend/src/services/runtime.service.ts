@@ -28,11 +28,11 @@ export const DROP_ALL_DATA = 'dropAllData';
 
 @injectable()
 export class RuntimeService extends Service {
+  name = 'runtime';
   private logger: pino.Logger;
 
   private subscriptions: { unsubscribe: () => void; drain: () => Promise<void>; isClosed: () => boolean }[] = [];
   private runtimeInstances: Map<string, RuntimeInstance> = new Map();
-  private runtimeInstances2: Map<string, RuntimeInstance> = new Map();
 
   @inject(DROP_ALL_DATA)
   private dropAllData!: boolean;
@@ -48,14 +48,14 @@ export class RuntimeService extends Service {
     @inject(SystemRepository) private systemRepository: SystemRepository,
   ) {
     super();
-    this.logger = this.loggerService.getLogger('runtime');
+    this.logger = this.loggerService.getLogger(this.name);
   }
 
   protected async initialize() {
     this.logger.info('Starting');
-    await this.dgraphService.start();
+    await this.dgraphService.start(this.name);
     await this.dgraphService.initSchema(this.dropAllData);
-    await this.natsService.start();
+    await this.natsService.start(this.name);
     await this.rehydrateRuntimes();
     this.subscribeToRuntime();
   }
@@ -72,12 +72,14 @@ export class RuntimeService extends Service {
       }
     }
     this.subscriptions = [];
+    console.log('start shutting down runtime instances', this.runtimeInstances.size);
     for (const runtimeInstance of this.runtimeInstances.values()) {
-      await runtimeInstance.stop();
+      await runtimeInstance.stop(this.name);
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
     this.runtimeInstances.clear();
-    await this.natsService.stop();
-    await this.dgraphService.stop();
+    await this.natsService.stop(this.name);
+    await this.dgraphService.stop(this.name);
   }
 
   isRunning(): boolean {
@@ -113,10 +115,10 @@ export class RuntimeService extends Service {
             mcpClientName: runtime.mcpClientName ?? '',
           },
           () => {
-            this.runtimeInstances2.set(key, runtimeInstance);
+            this.runtimeInstances.set(key, runtimeInstance);
           },
           () => {
-            this.runtimeInstances2.delete(key);
+            this.runtimeInstances.delete(key);
           },
         )
       }
@@ -241,7 +243,7 @@ export class RuntimeService extends Service {
       }
       // Runtime ID is a unique identifier for the runtime, including its process id
       const RID = `${instance.id}-${msg.data.pid}`;
-      if (this.runtimeInstances2.has(RID)) {
+      if (this.runtimeInstances.has(RID)) {
         msg.respond(new NatsErrorMessage({ error: `Runtime ${msg.data.name} already connected with process id ${msg.data.pid}` }));
       } else {
         const runtimeInstance = this.runtimeInstanceFactory(
@@ -253,10 +255,10 @@ export class RuntimeService extends Service {
             hostname: msg.data.hostname,
             mcpClientName: msg.data.name || 'unknown',
           }, () => {
-            this.runtimeInstances2.set(RID, runtimeInstance);
+            this.runtimeInstances.set(RID, runtimeInstance);
             msg.respond(new AckMessage({ metadata: { RID: RID, workspaceId: workspace.id, id: instance.id } }));
           }, () => {
-            this.runtimeInstances2.delete(RID);
+            this.runtimeInstances.delete(RID);
           });
       }
     } else if (msg instanceof UpdateMcpToolsMessage) {

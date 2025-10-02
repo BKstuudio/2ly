@@ -7,4 +7,4 @@ dotenv.config();
 start();
 
 const mainService = container.get(MainService);
-mainService.start();
+mainService.start('index');

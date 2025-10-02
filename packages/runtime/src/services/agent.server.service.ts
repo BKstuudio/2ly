@@ -38,6 +38,7 @@ export const AGENT_SERVER_TRANSPORT_PORT = 'agent.server.transport.port';
 
 @injectable()
 export class AgentServerService extends Service {
+  name = 'agent-server';
   private logger: pino.Logger;
   private server: Server | undefined;
   private transport: StdioServerTransport | StreamableHTTPServerTransport | undefined;
@@ -63,14 +64,14 @@ export class AgentServerService extends Service {
     @inject(AGENT_SERVER_TRANSPORT_PORT) private readonly agentServerTransportPort: string,
   ) {
     super();
-    this.logger = this.loggerService.getLogger('agent.server');
+    this.logger = this.loggerService.getLogger(this.name);
   }
 
   protected async initialize() {
     this.logger.info('Starting');
-    await this.identityService.start();
-    await this.natsService.start();
-    await this.healthService.start();
+    await this.identityService.start(this.name);
+    await this.natsService.start(this.name);
+    await this.healthService.start(this.name);
     await this.startServer();
   }
 
@@ -79,7 +80,9 @@ export class AgentServerService extends Service {
     await this.stopServer();
     this.rxSubscriptions.forEach((subscription) => subscription.unsubscribe());
     this.rxSubscriptions = [];
-    await this.natsService.stop();
+    await this.natsService.stop(this.name);
+    await this.identityService.stop(this.name);
+    await this.healthService.stop(this.name);
   }
 
   private async startServer() {

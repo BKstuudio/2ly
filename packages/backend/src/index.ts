@@ -6,7 +6,7 @@ dotenv.config();
 start();
 
 const mainService = container.get(MainService);
-mainService.start();
+mainService.start('index');
 
 // REFERENCES
 // as-integration-fastify is using a fork since: https://github.com/apollo-server-integrations/apollo-server-integration-fastify/issues/296

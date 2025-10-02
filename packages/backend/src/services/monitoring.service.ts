@@ -7,6 +7,7 @@ import { MonitoringRepository } from '../repositories/monitoring.repository';
 @injectable()
 export class MonitoringService extends Service {
 
+    name = 'monitoring';
     private logger: pino.Logger;
 
     constructor(
@@ -21,19 +22,15 @@ export class MonitoringService extends Service {
 
     protected async initialize() {
         this.logger.info('Initializing MonitoringService');
-        // Monitoring service expects the NATS service to be started
-        if (!this.natsService.isConnected()) {
-            throw new Error('Monitoring service expects the NATS service to be started before to be initialized');
-        }
-        // Monitoring service expects the DGraph service to be started
-        if (!this.dgraphService.isConnected()) {
-            throw new Error('Monitoring service expects the DGraph service to be started before to be initialized');
-        }
+        await this.natsService.start(this.name);
+        await this.dgraphService.start(this.name);
         this.monitorCallTools();
     }
 
     protected async shutdown() {
         this.logger.info('Shutting down MonitoringService');
+        await this.dgraphService.stop(this.name);
+        await this.natsService.stop(this.name);
     }
 
     private async monitorCallTools() {

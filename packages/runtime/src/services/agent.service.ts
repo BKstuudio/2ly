@@ -5,6 +5,7 @@ import { AgentServerService } from './agent.server.service';
 
 @injectable()
 export class AgentService extends Service {
+  name = 'agent';
   private logger: pino.Logger;
   private onInitializeMCPServerCallbacks: (() => void)[] = [];
 
@@ -13,7 +14,7 @@ export class AgentService extends Service {
     @inject(AgentServerService) private agentServerService: AgentServerService,
   ) {
     super();
-    this.logger = this.loggerService.getLogger('agent');
+    this.logger = this.loggerService.getLogger(this.name);
   }
 
   protected async initialize() {
@@ -21,12 +22,12 @@ export class AgentService extends Service {
     this.agentServerService.onInitializeMCPServer(() => {
       this.onInitializeMCPServerCallbacks.forEach((callback) => callback());
     });
-    await this.agentServerService.start();
+    await this.agentServerService.start(this.name);
   }
 
   protected async shutdown() {
     this.logger.info('Stopping');
-    await this.agentServerService.stop();
+    await this.agentServerService.stop(this.name);
   }
 
   public onInitializeMCPServer(callback: () => void) {

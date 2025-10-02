@@ -15,6 +15,7 @@ import { IdentityService } from './identity.service';
 
 @injectable()
 export class MainService extends Service {
+  name = 'main';
   private logger: pino.Logger;
   private RID: string | null = null;
   private failedConnectionCounter: number = 0;
@@ -28,15 +29,15 @@ export class MainService extends Service {
     @inject(ToolService) private toolService: ToolService,
   ) {
     super();
-    this.logger = this.loggerService.getLogger('main');
+    this.logger = this.loggerService.getLogger(this.name);
   }
 
   protected async initialize() {
     this.logger.info(`Starting with PID: ${process.pid}`);
     this.registerGracefulShutdown();
 
-    await this.natsService.start();
-    await this.identityService.start();
+    await this.natsService.start(this.name);
+    await this.identityService.start(this.name);
 
     try {
       // INIT PHASE
@@ -71,15 +72,15 @@ export class MainService extends Service {
     }
 
     // START PHASE
-    await this.healthService.start();
+    await this.healthService.start(this.name);
 
     if (this.identityService.getAgentCapability() === true || this.identityService.getAgentCapability() === 'auto') {
       this.logger.info(`Starting agent service`);
-      this.agentService.start();
+      this.agentService.start(this.name);
     }
     if (this.identityService.getToolCapability() === true) {
       this.logger.info(`Starting tool service`);
-      this.toolService.start();
+      this.toolService.start(this.name);
     }
 
     // When agent service initializes, it means that the runtime is acting as an MCP server
@@ -112,10 +113,10 @@ export class MainService extends Service {
   protected async shutdown() {
     this.logger.info('Stopping');
     // no need to send disconnect message, health service kills the heartbeat signal upon stopping
-    await this.healthService.stop();
-    await this.toolService.stop();
-    await this.agentService.stop();
-    await this.natsService.stop();
+    await this.healthService.stop(this.name);
+    await this.toolService.stop(this.name);
+    await this.agentService.stop(this.name);
+    await this.natsService.stop(this.name);
   }
 
   public async reconnect() {
@@ -183,7 +184,9 @@ export class MainService extends Service {
       console.log('processing shutdown...');
     }, 1000);
     this.logger.info(`Graceful shutdown: ${signal}`);
-    await this.stop();
+    // the shutdown is expressed from the index consumer point of view
+    // we might want to move the gracefull shutdown logic into index
+    await this.stop('index');
     clearInterval(keepAlive);
     process.exit(0);
   }

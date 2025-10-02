@@ -7,6 +7,7 @@ import { RateLimitMiddleware } from '../middleware/rate-limit.middleware';
 
 @injectable()
 export class FastifyService extends Service {
+  name = 'fastify';
   private logger: pino.Logger;
   public readonly fastify: FastifyInstance;
   constructor(
@@ -15,7 +16,7 @@ export class FastifyService extends Service {
     @inject(RateLimitMiddleware) private rateLimitMiddleware: RateLimitMiddleware,
   ) {
     super();
-    this.logger = this.loggerService.getLogger('fastify');
+    this.logger = this.loggerService.getLogger(this.name);
     this.fastify = Fastify();
   }
 

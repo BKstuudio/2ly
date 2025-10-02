@@ -140,7 +140,9 @@ const start = () => {
         onReady,
         onDisconnect,
       );
-      runtimeInstance.start();
+      // We know the runtime factory is used by the runtime service so we can
+      // identify the consumer safely
+      runtimeInstance.start('runtime');
       return runtimeInstance;
     };
   });

@@ -32,6 +32,7 @@ export interface GraphQLContext extends BaseContext {
 
 @injectable()
 export class ApolloService extends Service {
+  name = 'apollo';
   public readonly apollo: ApolloServer<GraphQLContext>;
   // TODO: correctly tear down the websocket server
   private wsCleanup?: { dispose: () => void | Promise<void> };
@@ -76,12 +77,12 @@ export class ApolloService extends Service {
   }
 
   isRunning(): boolean {
-    return this.state.getState() === STATE.STARTED;
+    return this.state === 'STARTED';
   }
 
   protected async initialize() {
     this.logger.info('Starting');
-    await this.dgraphService.start();
+    await this.dgraphService.start(this.name);
     await this.apollo.start();
 
     // Register WebSocket handler at /graphql-ws to avoid conflict with HTTP /graphql
@@ -116,14 +117,15 @@ export class ApolloService extends Service {
         },
       },
     });
-    this.fastifyService.start();
+    this.fastifyService.start(this.name);
   }
 
   protected async shutdown() {
     this.logger.info('Stopping');
+    await this.fastifyService.stop(this.name);
     await this.apollo.stop();
     this.wsCleanup?.dispose();
-    await this.dgraphService.stop();
+    await this.dgraphService.stop(this.name);
   }
 
   /**

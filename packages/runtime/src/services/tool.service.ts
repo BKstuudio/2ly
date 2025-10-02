@@ -20,6 +20,7 @@ export const DEFAULT_TESTING_RUNTIME = 'DEFAULT_TESTING_RUNTIME';
 
 @injectable()
 export class ToolService extends Service {
+  name = 'tool';
   private logger: pino.Logger;
 
   @inject(ROOTS) private roots!: string | undefined;
@@ -34,14 +35,14 @@ export class ToolService extends Service {
     @inject(NatsService) private natsService: NatsService,
   ) {
     super();
-    this.logger = this.loggerService.getLogger('tool');
+    this.logger = this.loggerService.getLogger(this.name);
   }
 
   protected async initialize() {
     this.logger.info('Starting');
-    await this.identityService.start();
+    await this.identityService.start(this.name);
     await this.healthService.waitForStarted();
-    await this.toolClientService.start();
+    await this.toolClientService.start(this.name);
     this.setRoots();
     this.setGlobalRuntime();
     this.setDefaultTestingRuntime();
@@ -49,7 +50,8 @@ export class ToolService extends Service {
 
   protected async shutdown() {
     this.logger.info('Stopping');
-    await this.toolClientService.stop();
+    await this.toolClientService.stop(this.name);
+    await this.identityService.stop(this.name);
   }
 
   private async setRoots() {
@@ -77,9 +79,9 @@ export class ToolService extends Service {
 
       const validatedRoots = this.roots
         ? this.roots.split(',').map((root) => {
-            const [name, uri] = root.split(':');
-            return { name, uri: `file://${uri}` };
-          })
+          const [name, uri] = root.split(':');
+          return { name, uri: `file://${uri}` };
+        })
         : undefined;
 
       const message = SetRootsMessage.create({ RID: identity.RID, roots: validatedRoots! }) as SetRootsMessage;

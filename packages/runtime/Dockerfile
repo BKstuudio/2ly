@@ -26,7 +26,7 @@ RUN rm -rf packages/common/node_modules
 
 # Create non-root user
 RUN addgroup -g 1001 -S runtime && \
-    adduser -S runtime -u 1001
+  adduser -S runtime -u 1001
 
 # Change ownership of app directory
 RUN chown -R runtime:runtime /app
@@ -42,4 +42,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD node -e "console.log('Health check - runtime running')" || exit 1
 
 # Start the application
-CMD ["npm", "start", "-w", "@2ly/runtime"]
+CMD ["node", "packages/runtime/dist/index.js"]

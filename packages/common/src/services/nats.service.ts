@@ -6,7 +6,6 @@ import { inject, injectable } from 'inversify';
 import { LoggerService } from './logger.service';
 import pino from 'pino';
 import { Service } from './service.interface';
-import { STATE } from '../SimpleStateMachine';
 import { NatsMessage, NatsPublish, NatsRequest, NatsResponse } from './nats.message';
 import { callToolStream, replyStream } from '../messages';
 import { DEFAULT_REQUEST_TIMEOUT } from '../constants';
@@ -19,6 +18,7 @@ export const DEFAULT_EPHEMERAL_TTL = 60 * 1000; // 60 seconds in milliseconds
 
 @injectable()
 export class NatsService extends Service {
+  name = 'nats';
   private nats: NatsConnection | null = null;
   private logger: pino.Logger;
   private jetstream: JetStreamClient | null = null;
@@ -34,7 +34,7 @@ export class NatsService extends Service {
     @inject(EPHEMERAL_TTL) private readonly ephemeralTTL: number = DEFAULT_EPHEMERAL_TTL,
   ) {
     super();
-    this.logger = this.loggerService.getLogger('nats');
+    this.logger = this.loggerService.getLogger(this.name);
     if (!this.natsConnectionOptions.servers) {
       throw new Error('Servers are required for NATS connection');
     }
@@ -85,14 +85,12 @@ export class NatsService extends Service {
       await this.nats.drain();
       this.nats = null;
     }
-    this.logger.info('Waiting 3 seconds for NATS to drain');
-    await new Promise(resolve => setTimeout(resolve, 3000));
     this.logger.info('Stopped');
   }
 
   // Reports whether the service is connected and started
   public isConnected(): boolean {
-    return this.state.getState() === STATE.STARTED && this.nats !== null && !this.nats.isClosed();
+    return this.state === 'STARTED' && this.nats !== null && !this.nats.isClosed();
   }
 
   // Subscribes to a core NATS subject (ephemeral, no persistence)
@@ -203,7 +201,11 @@ export class NatsService extends Service {
     if (!this.heartbeatKV) {
       throw new Error('Heartbeat KV not initialized');
     }
-    this.heartbeatKV.delete(id);
+    try {
+      this.heartbeatKV.delete(id);
+    } catch (error) {
+      this.logger.warn(`Failed to delete the hearbeatKV for ${id}: ${error}`)
+    }
   }
 
   async observeHeartbeat(id: string) {
@@ -217,6 +219,11 @@ export class NatsService extends Service {
     const TTL = this.heartbeatTTL;
     const watcher = await this.heartbeatKV.watch({ key: id });
     const TIMEOUT_ERROR_MSG = 'Timeout Error';
+    const activeTimeouts = new Set<NodeJS.Timeout>();
+    const clearTimoutId = (timeoutId: NodeJS.Timeout) => {
+      clearTimeout(timeoutId);
+      activeTimeouts.delete(timeoutId);
+    };
 
     return {
       [Symbol.asyncIterator]: async function* () {
@@ -225,15 +232,17 @@ export class NatsService extends Service {
 
         const createTimeoutPromise = (): Promise<never> => {
           return new Promise((_, reject) => {
-            timeoutId = setTimeout(() => {
+            const timeout = setTimeout(() => {
               reject(new Error(TIMEOUT_ERROR_MSG));
             }, TTL);
+            activeTimeouts.add(timeout);
+            timeoutId = timeout;
           });
         };
 
         const cleanup = () => {
           if (timeoutId) {
-            clearTimeout(timeoutId);
+            clearTimoutId(timeoutId);
             timeoutId = null;
           }
         };
@@ -274,6 +283,8 @@ export class NatsService extends Service {
 
       unsubscribe: () => {
         watcher?.stop?.();
+        activeTimeouts.forEach(clearTimoutId);
+        activeTimeouts.clear();
       },
 
       drain: () => Promise.resolve()

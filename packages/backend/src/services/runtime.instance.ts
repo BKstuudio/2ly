@@ -36,6 +36,7 @@ export type RuntimeInstanceMetadata = {
 @injectable()
 export class RuntimeInstance extends Service {
 
+  name = 'runtime-instance';
   private rxjsSubscriptions: Subscription[] = [];
   private natsSubscriptions: { unsubscribe: () => void; drain: () => Promise<void> }[] = [];
 
@@ -75,8 +76,12 @@ export class RuntimeInstance extends Service {
         await this.runtimeRepository.updateLastSeen(this.instance.id);
       }
     }
-    // when the heartbeatSubscription terminates => means the heartbeat has been missed
-    await this.disconnect();
+    // when the heartbeatSubscription terminates it can mean two things
+    // 1) The runtime instance service is shutting down (runtime is still alive and should not be *disconnected*)
+    // 2) Heartbeat has been missed -> runtime must be disconnected
+    if (this.state === 'STARTED') {
+      await this.disconnect();
+    }
   }
 
   private async handleRuntimeMessages() {
@@ -113,7 +118,7 @@ export class RuntimeInstance extends Service {
     if (!this.instance) {
       throw new Error('Instance not initialized');
     }
-    this.logger.info(`Disconnecting runtime ${this.metadata.RID}`);
+    this.logger.info(`Disconnecting runtime 1 ${this.metadata.RID}`);
     await this.runtimeRepository.setInactive(this.instance.id);
     this.shutdown();
     this.onDisconnect();

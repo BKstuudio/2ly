@@ -10,10 +10,11 @@ import { ListRootsRequestSchema, ToolListChangedNotificationSchema } from '@mode
 
 @injectable()
 export class ToolServerService extends Service {
+  name = 'tool-server';
   private client: Client;
   private transport: Transport;
   private tools: BehaviorSubject<MCPTool[]> = new BehaviorSubject<MCPTool[]>([]);
-  private onShutdownCallback: () => Promise<void> = async () => {};
+  private onShutdownCallback: () => Promise<void> = async () => { };
 
   constructor(
     private logger: pino.Logger,

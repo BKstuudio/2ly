@@ -22,6 +22,7 @@ export const DGRAPH_URL = 'dgraphUrl';
 
 @injectable()
 export class DGraphService extends Service {
+  name = 'dgraph';
   private logger: pino.Logger;
   private subscriptionClient?: SubscriptionClient;
   private urqlClient?: Client;
@@ -31,12 +32,12 @@ export class DGraphService extends Service {
     @inject(DGRAPH_URL) private readonly dgraphUrl: string,
   ) {
     super();
-    this.logger = this.loggerService.getLogger('dgraph');
+    this.logger = this.loggerService.getLogger(this.name);
 
   }
 
   isConnected(): boolean {
-    return this.state.getState() === STATE.STARTED;
+    return this.state === 'STARTED';
   }
 
   protected async initialize() {

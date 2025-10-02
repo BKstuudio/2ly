@@ -45,4 +45,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD node -e "console.log('Health check - orchestrator running')" || exit 1
 
 # Start the application
-CMD ["npm", "start", "-w", "@2ly/backend"]
+CMD ["node", "packages/backend/dist/index.js"]

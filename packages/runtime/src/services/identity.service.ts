@@ -11,8 +11,11 @@ export const TOOL_CAPABILITY = 'tool.capability';
 
 @injectable()
 export class IdentityService extends Service {
+
+  name = 'identity';
+
   @inject(IDENTITY_NAME)
-  protected name!: string;
+  protected identityName!: string;
 
   @inject(WORKSPACE_ID)
   protected workspaceId!: string;
@@ -33,17 +36,17 @@ export class IdentityService extends Service {
     @inject(NatsService) private natsService: NatsService,
   ) {
     super();
-    this.logger = this.loggerService.getLogger('identity');
+    this.logger = this.loggerService.getLogger(this.name);
   }
 
   protected async initialize() {
     this.logger.info('Starting');
-    await this.natsService.start();
+    await this.natsService.start(this.name);
   }
 
   protected async shutdown() {
     this.logger.info('Stopping');
-    await this.natsService.stop();
+    await this.natsService.stop(this.name);
   }
 
   getId() {
@@ -88,7 +91,7 @@ export class IdentityService extends Service {
       RID: this.RID,
       processId: process.pid.toString() ?? uuidv4(),
       workspaceId: this.workspaceId,
-      name: this.name,
+      name: this.identityName,
       // TODO: get version from package.json
       version: '1.0.0',
       hostIP: getHostIP(),

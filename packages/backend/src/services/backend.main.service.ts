@@ -12,6 +12,7 @@ import { MonitoringService } from './monitoring.service';
 
 @injectable()
 export class MainService extends Service {
+  name = 'main';
   private logger: pino.Logger;
 
   constructor(
@@ -25,27 +26,27 @@ export class MainService extends Service {
     @inject(MonitoringService) private monitoringService: MonitoringService,
   ) {
     super();
-    this.logger = this.loggerService.getLogger('main');
+    this.logger = this.loggerService.getLogger(this.name);
   }
 
   protected async initialize() {
     this.logger.info('Starting');
-    await this.runtimeService.start();
+    await this.runtimeService.start(this.name);
     this.registerHealthCheck();
     this.registerUtilityEndpoints();
-    await this.apolloService.start();
+    await this.apolloService.start(this.name);
     await this.initInstance();
-    await this.mcpServerAutoConfigService.start();
-    await this.monitoringService.start();
+    await this.mcpServerAutoConfigService.start(this.name);
+    await this.monitoringService.start(this.name);
     this.registerGracefulShutdown();
   }
 
   protected async shutdown() {
     this.logger.info('Stopping');
-    await this.runtimeService.stop();
-    await this.apolloService.stop();
-    await this.mcpServerAutoConfigService.stop();
-    await this.monitoringService.stop();
+    await this.runtimeService.stop(this.name);
+    await this.apolloService.stop(this.name);
+    await this.mcpServerAutoConfigService.stop(this.name);
+    await this.monitoringService.stop(this.name);
   }
 
   private async initInstance() {
@@ -132,7 +133,9 @@ export class MainService extends Service {
       console.log('processing shutdown...');
     }, 1000);
     this.logger.info(`Graceful shutdown: ${signal}`);
-    await this.stop();
+    // the shutdown is expressed from the index consumer point of view
+    // we might want to move the gracefull shutdown logic into index
+    await this.stop('index');
     clearInterval(keepAlive);
     process.exit(0);
   }

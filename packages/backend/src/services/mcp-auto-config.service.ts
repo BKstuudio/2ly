@@ -16,6 +16,7 @@ interface SearchResult {
 
 @injectable()
 export class MCPServerAutoConfigService extends Service {
+    name = 'mcp-server-auto-config';
     private logger: pino.Logger;
     private client!: ReturnType<typeof ModelClient>;
     private _isConfigured: boolean = false;

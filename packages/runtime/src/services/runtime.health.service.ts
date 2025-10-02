@@ -7,6 +7,7 @@ export const HEARTBEAT_INTERVAL = 'heartbeat.interval';
 
 @injectable()
 export class HealthService extends Service {
+  name = 'health';
   private logger: pino.Logger;
   private heartbeatIntervalRef: NodeJS.Timeout | null = null;
 
@@ -19,7 +20,7 @@ export class HealthService extends Service {
     @inject(IdentityService) private identityService: IdentityService,
   ) {
     super();
-    this.logger = this.loggerService.getLogger('health');
+    this.logger = this.loggerService.getLogger(this.name);
   }
 
   protected async initialize() {
