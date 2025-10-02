@@ -5,26 +5,10 @@
 [![Docker](https://img.shields.io/badge/docker-required-blue.svg)](https://docker.com/)
 [![Development Status](https://img.shields.io/badge/status-beta-orange.svg)](https://github.com/AlpinAI/2ly/releases)
 
-**AI Tools Platform. Connect any agent to any tool centrally.**
+**One Platform. Any agent. All tools.**
 
-## Core Problem
-
-AI development suffers from tool fragmentation and poor visibility. Each framework has different tool interfaces, requiring duplicate integration work. Deploying the same tool across LangChain, Langflow, and n8n means building separate connectors. 
-
-Meanwhile, enterprises have no centralized way to monitor tool usage, optimize costs, or understand agent-tool relationships across their systems.
-
-## How 2LY Solves It
-
-By decoupling agent logic from tool management, we provide a unified layer to:
-
-- **Support** any framework, such as LangChain, Langflow, n8n, or your custom solution
-- **Connect** all agents to MCP servers, APIs, and custom tools universally
-- **Deploy** anywhere - self-hosted, cloud, or hybrid with distributed runtimes
-- **Manage** tool deployment, monitoring, and scaling independently from agent logic
-- **Monitor** all agent-tool interactions with comprehensive observability
-- **Optimize** tool efficiency and costs through context engineering and analytics
-
-Empowering AI builders to focus on agent logic while 2LY handles the tool infrastructure.
+2LY is an open source platform for AI Tools connectivity within or across any agent framework or environment.
+It provides a central tools registry with embedded runtimes, enabling unified management and observability across all agent-to-tool interactions. By decoupling tool infrastructure from agent logic, 2LY eliminates fragmented integrations and gives users control over their AI tool ecosystem. The platform supports interoperable protocols including Model Context Protocol (MCP), with REST APIs and custom functions coming soon.
 
 ## Quick Start
 
@@ -49,6 +33,14 @@ Access dashboard at **http://localhost:8888**
 5. Trigger your agent - it has now access to the tools
 5. Monitor agent-to-tool interactions and observability insights
 
+## Key features
+
+- **Tool Registry** - Centralized catalog of MCP servers, APIs, and custom functions with version management
+- **Agents** - Discover and manage all your agents across frameworks like LangChain, Langflow, n8n, and custom implementations
+- **Playground** - Integrated environment to test and debug tools before connecting them to agents
+- **Monitoring** - Complete visibility into agent-to-tool transactions with detailed logs, analytics, and compliance tracking
+- **Deployment** - Flexible runtime deployment across local, remote, and edge environments with automatic scaling
+
 ## Architecture
 
 2LY acts as both a proxy and intelligence layer between your agents and tools:
@@ -62,28 +54,15 @@ Your Agent → 2LY Platform → Tool Ecosystem
 ```
 
 **Core Components:**
-- **Runtime** - Isolated execution environments for agents and tools with performance monitoring
-- **Protocol Gateway** - MCP-to-HTTP translation with request/response tracking
-- **Agent Connectors** - Framework-specific integration libraries
-- **Intelligence Engine** - Usage analytics, cost optimization, and relationship mapping
-- **Management Dashboard** - Tool deployment, monitoring, and observability insights
+1. Runtimes - Isolated execution environments for tools with flexible deployment options
+2. Dgraph - High-performance graph database for tool registry and relationship mapping
+3. NATS - Message bus for real-time communication and event streaming
+4. Backend - Logic processing and tool orchestration
+5. Frontend - Management dashboard for configuration, monitoring, and analytics
 
+## Roadmap
+2LY is evolving rapidly with new features and capabilities being added regularly. Have an idea or need something specific? We'd love to hear from you - submit a feature request!
 
-## Universal Tool Ecosystem
-
-2LY supports any tool type - no vendor lock-in, no proprietary limitations.
-
-### MCP Servers (Available Now)
-- **Native Anthropic Registry Integration** - 50+ community servers (filesystem, GitHub, database, and more) with full observability
-- **Custom MCP Servers** - Deploy your proprietary servers with complete analytics and monitoring
-
-### REST APIs (Coming Q4 2025)
-- **Direct API Integration** - Wrap any HTTP endpoint with authentication and usage tracking
-- **Response Transformation** - Standardized outputs with performance metrics
-
-### Custom Functions (Coming Q4 2025)
-- **JavaScript/TypeScript Functions** - Deploy custom business logic with execution analytics
-- **Integration Adapters** - Connect any system with relationship mapping and cost tracking
 
 ## Links
 
