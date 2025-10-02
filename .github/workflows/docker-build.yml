@@ -101,6 +101,7 @@ jobs:
           labels: ${{ steps.meta-backend.outputs.labels }}
           build-args: |
             BUILDKIT_INLINE_CACHE=1
+          platforms: linux/amd64,linux/arm64
 
       - name: Build and push Runtime image
         uses: docker/build-push-action@v5
@@ -112,6 +113,7 @@ jobs:
           labels: ${{ steps.meta-runtime.outputs.labels }}
           build-args: |
             BUILDKIT_INLINE_CACHE=1
+          platforms: linux/amd64,linux/arm64
 
       - name: Build and push Frontend image
         uses: docker/build-push-action@v5
@@ -123,6 +125,7 @@ jobs:
           labels: ${{ steps.meta-frontend.outputs.labels }}
           build-args: |
             BUILDKIT_INLINE_CACHE=1
+          platforms: linux/amd64,linux/arm64
 
       - name: Build and push Doc image
         uses: docker/build-push-action@v5
@@ -134,3 +137,4 @@ jobs:
           labels: ${{ steps.meta-doc.outputs.labels }}
           build-args: |
             BUILDKIT_INLINE_CACHE=1
+          platforms: linux/amd64,linux/arm64
