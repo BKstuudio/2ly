@@ -33,6 +33,14 @@ Access dashboard at **http://localhost:8888**
 5. Trigger your agent - it has now access to the tools
 5. Monitor agent-to-tool interactions and observability insights
 
+## Key features
+
+- **Tool Registry** - Centralized catalog of MCP servers, APIs, and custom functions with version management
+- **Agents** - Discover and manage all your agents across frameworks like LangChain, Langflow, n8n, and custom implementations
+- **Playground** - Integrated environment to test and debug tools before connecting them to agents
+- **Monitoring** - Complete visibility into agent-to-tool transactions with detailed logs, analytics, and compliance tracking
+- **Deployment** - Flexible runtime deployment across local, remote, and edge environments with automatic scaling
+
 ## Architecture
 
 2LY acts as both a proxy and intelligence layer between your agents and tools:
@@ -46,28 +54,15 @@ Your Agent → 2LY Platform → Tool Ecosystem
 ```
 
 **Core Components:**
-- **Runtime** - Isolated execution environments for agents and tools with performance monitoring
-- **Protocol Gateway** - MCP-to-HTTP translation with request/response tracking
-- **Agent Connectors** - Framework-specific integration libraries
-- **Intelligence Engine** - Usage analytics, cost optimization, and relationship mapping
-- **Management Dashboard** - Tool deployment, monitoring, and observability insights
+1. Runtimes - Isolated execution environments for tools with flexible deployment options
+2. Dgraph - High-performance graph database for tool registry and relationship mapping
+3. NATS - Message bus for real-time communication and event streaming
+4. Backend - Logic processing and tool orchestration
+5. Frontend - Management dashboard for configuration, monitoring, and analytics
 
+## Roadmap
+2LY is evolving rapidly with new features and capabilities being added regularly. Have an idea or need something specific? We'd love to hear from you - submit a feature request!
 
-## Universal Tool Ecosystem
-
-2LY supports any tool type - no vendor lock-in, no proprietary limitations.
-
-### MCP Servers (Available Now)
-- **Native Anthropic Registry Integration** - 50+ community servers (filesystem, GitHub, database, and more) with full observability
-- **Custom MCP Servers** - Deploy your proprietary servers with complete analytics and monitoring
-
-### REST APIs (Coming Q4 2025)
-- **Direct API Integration** - Wrap any HTTP endpoint with authentication and usage tracking
-- **Response Transformation** - Standardized outputs with performance metrics
-
-### Custom Functions (Coming Q4 2025)
-- **JavaScript/TypeScript Functions** - Deploy custom business logic with execution analytics
-- **Integration Adapters** - Connect any system with relationship mapping and cost tracking
 
 ## Links
 
