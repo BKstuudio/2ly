@@ -18,10 +18,10 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME_BACKEND: ${{ github.repository }}/backend
-  IMAGE_NAME_RUNTIME: ${{ github.repository }}/runtime
-  IMAGE_NAME_FRONTEND: ${{ github.repository }}/frontend
-  IMAGE_NAME_DOC: ${{ github.repository }}/doc
+  IMAGE_NAME_BACKEND: ${{ github.repository_owner }}/backend
+  IMAGE_NAME_RUNTIME: ${{ github.repository_owner }}/runtime
+  IMAGE_NAME_FRONTEND: ${{ github.repository_owner }}/frontend
+  IMAGE_NAME_DOC: ${{ github.repository_owner }}/doc
   PR_NUMBER: ${{ github.event.number }}
 
 jobs:
