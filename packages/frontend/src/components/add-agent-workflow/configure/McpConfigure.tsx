@@ -18,6 +18,122 @@ interface McpConfigureProps {
     onSuccessExit?: () => void;
 }
 
+const FEATURED_SERVERS: McpServerFromRegistry[] = [
+    {
+        _meta: {
+            'io.modelcontextprotocol.registry/official': {
+                isLatest: true,
+                publishedAt: new Date().toISOString(),
+                status: 'active',
+                updatedAt: new Date().toISOString(),
+            },
+        },
+        server: {
+            name: 'modelcontextprotocol/server-filesystem',
+            description: 'Access and manipulate files and directories on your local filesystem',
+            version: '0.6.2',
+            repository: {
+                url: 'https://github.com/modelcontextprotocol/servers',
+                source: 'github',
+                id: 'modelcontextprotocol/servers',
+                subfolder: 'src/filesystem',
+            },
+            packages: [
+                {
+                    identifier: '@modelcontextprotocol/server-filesystem',
+                    version: '0.6.2',
+                    registryType: 'npm',
+                    registryBaseUrl: 'https://registry.npmjs.org',
+                    runtimeHint: 'npx',
+                    transport: {
+                        type: 'stdio',
+                    },
+                    packageArguments: [],
+                    environmentVariables: [],
+                },
+            ],
+        },
+    },
+    {
+        _meta: {
+            'io.modelcontextprotocol.registry/official': {
+                isLatest: true,
+                publishedAt: new Date().toISOString(),
+                status: 'active',
+                updatedAt: new Date().toISOString(),
+            },
+        },
+        server: {
+            name: 'modelcontextprotocol/server-fetch',
+            description: 'Fetch web content and convert it to markdown for easy consumption',
+            version: '0.6.5',
+            repository: {
+                url: 'https://github.com/modelcontextprotocol/servers',
+                source: 'github',
+                id: 'modelcontextprotocol/servers',
+                subfolder: 'src/fetch',
+            },
+            packages: [
+                {
+                    identifier: '@modelcontextprotocol/server-fetch',
+                    version: '0.6.5',
+                    registryType: 'npm',
+                    registryBaseUrl: 'https://registry.npmjs.org',
+                    runtimeHint: 'npx',
+                    transport: {
+                        type: 'stdio',
+                    },
+                    packageArguments: [],
+                    environmentVariables: [],
+                },
+            ],
+        },
+    },
+    {
+        _meta: {
+            'io.modelcontextprotocol.registry/official': {
+                isLatest: true,
+                publishedAt: new Date().toISOString(),
+                status: 'active',
+                updatedAt: new Date().toISOString(),
+            },
+        },
+        server: {
+            name: 'modelcontextprotocol/server-brave-search',
+            description: 'Search the web using Brave Search API for real-time information',
+            version: '0.6.2',
+            repository: {
+                url: 'https://github.com/modelcontextprotocol/servers',
+                source: 'github',
+                id: 'modelcontextprotocol/servers',
+                subfolder: 'src/brave-search',
+            },
+            packages: [
+                {
+                    identifier: '@modelcontextprotocol/server-brave-search',
+                    version: '0.6.2',
+                    registryType: 'npm',
+                    registryBaseUrl: 'https://registry.npmjs.org',
+                    runtimeHint: 'npx',
+                    transport: {
+                        type: 'stdio',
+                    },
+                    packageArguments: [],
+                    environmentVariables: [
+                        {
+                            name: 'BRAVE_API_KEY',
+                            description: 'API key for Brave Search',
+                            format: 'string',
+                            isRequired: true,
+                            isSecret: true,
+                        },
+                    ],
+                },
+            ],
+        },
+    },
+];
+
 const McpConfigure: React.FC<McpConfigureProps> = ({ onSuccessExit }) => {
     const [pageSize] = useState<number>(PAGE_SIZE_DEFAULT);
     const [searchResults, setSearchResults] = useState<McpServerFromRegistry[]>([]);
@@ -382,15 +498,18 @@ const McpConfigure: React.FC<McpConfigureProps> = ({ onSuccessExit }) => {
                     />
                 </div>
                 {currentQuery === '' ? (
-                    <div className="mt-4 border border-dashed border-gray-300 rounded-lg p-4 text-center">
-                        <p className="text-sm text-gray-600">Start by searching for an MCP server, or configure one manually.</p>
-                        <button
-                            type="button"
-                            onClick={initFormForManual}
-                            className="mt-3 px-4 py-2 text-sm rounded-md bg-primary-600 text-white hover:bg-primary-700"
-                        >
-                            Configure an MCP Server manually
-                        </button>
+                    <div className="flex-1 min-h-0 overflow-y-auto space-y-2 mt-3">
+                        <div className="mb-3 flex items-center justify-between">
+                            <h3 className="text-sm font-semibold text-gray-700">Featured MCP Servers</h3>
+                            <button
+                                type="button"
+                                onClick={initFormForManual}
+                                className="text-xs text-primary-600 hover:text-primary-700 underline"
+                            >
+                                Configure manually
+                            </button>
+                        </div>
+                        {FEATURED_SERVERS.map((s) => renderServerItem(s, Boolean(selectedServer && s.server.repository?.url === selectedServer.server.repository?.url && s.server.name === selectedServer.server.name)))}
                     </div>
                 ) : (
                     <div
