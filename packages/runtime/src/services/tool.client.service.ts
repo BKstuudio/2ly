@@ -63,7 +63,7 @@ export class ToolClientService extends Service {
 
   protected async shutdown() {
     this.logger.info('Stopping');
-    this.stopObserveMCPServers();
+    await this.stopObserveMCPServers();
     this.rxSubscriptions.forEach((subscription) => subscription.unsubscribe());
     this.rxSubscriptions = [];
   }
@@ -91,12 +91,20 @@ export class ToolClientService extends Service {
         // stop mcp servers that are not in the message
         for (const mcpServerId of mcpServersToStop) {
           const service = this.mcpServers.get(mcpServerId)!;
-          this.stopMCPServer({ id: mcpServerId, name: service.getName() });
+          await this.stopMCPServer({ id: mcpServerId, name: service.getName() });
         }
 
         // start or restart mcp servers that are in the message
         for (const mcpServer of msg.data.mcpServers) {
-          this.spawnMCPServer(mcpServer);
+          await this.spawnMCPServer(mcpServer).catch(async (error) => {
+            this.logger.error(`Failed to spawn MCP Server ${mcpServer.name}: ${error}`);
+            const service = this.mcpServers.get(mcpServer.id);
+            if (service) {
+              await this.stopService(service);
+            }
+            this.mcpServers.delete(mcpServer.id);
+            // TODO: surface error to the user
+          });
         }
       }
     }
@@ -122,7 +130,7 @@ export class ToolClientService extends Service {
     // Stop MCP servers
     // -> will also drain the capabilities subscriptions
     for (const mcpServer of this.mcpServers.values()) {
-      await mcpServer.stop();
+      await this.stopService(mcpServer);
     }
     this.mcpServers.clear();
   }
@@ -153,8 +161,10 @@ export class ToolClientService extends Service {
       await this.stopMCPServer(mcpServer);
     }
 
-    await mcpServerService.start();
+
+    await this.startService(mcpServerService);
     this.mcpServers.set(mcpServer.id, mcpServerService);
+
 
     // This getTools subscription will be completed when the MCP Server is stopped by the MCP Server Service
     mcpServerService.observeTools().subscribe((tools) => {
@@ -244,7 +254,10 @@ export class ToolClientService extends Service {
       return;
     }
     this.mcpTools.delete(mcpServer.id);
-    await this.mcpServers.get(mcpServer.id)?.stop();
+    const service = this.mcpServers.get(mcpServer.id);
+    if (service) {
+      await this.stopService(service);
+    }
     this.mcpServers.delete(mcpServer.id);
     this.logger.info(`MCPServer ${mcpServer.name} stopped`);
   }

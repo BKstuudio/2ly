@@ -16,7 +16,7 @@ import {
   SetMcpClientNameMessage,
 } from '@2ly/common';
 import { RuntimeRepository, WorkspaceRepository } from '../repositories';
-import { combineLatest, of, Subscription, tap } from 'rxjs';
+import { combineLatest, debounceTime, of, Subscription, tap } from 'rxjs';
 
 // TODO: the "connect"/"disconnect" status is not always meaningful since we can potentially have multiple
 // instances of the same runtime running with different process ids
@@ -157,6 +157,7 @@ export class RuntimeInstance extends Service {
       ? this.runtimeRepository.observeMCPServersOnGlobal(runtime.workspace.id)
       : of([]);
     const subscription = combineLatest([roots, edgeMcpServers, agentMcpServers, globalMcpServers]).pipe(
+      debounceTime(100), // debounce to avoid spamming the nats service
       tap(([roots, edgeMcpServers, agentMcpServers, globalMcpServers]) => {
         if (!this.instance) {
           // ignore

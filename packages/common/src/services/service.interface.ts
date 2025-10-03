@@ -47,7 +47,14 @@ export abstract class Service {
       this.state = 'STARTING';
       Service.activeServices.add(this);
       this.currentPromise = this.initialize();
-      await this.currentPromise;
+      try {
+        await this.currentPromise;
+      } catch (error) {
+        this.state = 'STOPPED';
+        this.currentPromise = undefined;
+        Service.activeServices.delete(this);
+        throw error;
+      }
       this.currentPromise = undefined;
       this.startedAt = new Date().toISOString();
       this.state = 'STARTED';

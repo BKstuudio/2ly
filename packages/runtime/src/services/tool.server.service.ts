@@ -47,7 +47,7 @@ export class ToolServerService extends Service {
     });
 
     if (this.config.transport === dgraphResolversTypes.McpTransportType.Stdio) {
-      this.logger.debug(`Setting STDIO transport with command: ${this.config.command} and args: ${this.config.args}`);
+      this.logger.info(`Setting STDIO transport with command: ${this.config.command} and args: ${this.config.args}`);
       const defaultEnv = getDefaultEnvironment();
       this.logger.debug(`Default environment: ${JSON.stringify(defaultEnv, null, 2)}`);
 
@@ -61,7 +61,7 @@ export class ToolServerService extends Service {
         }, defaultEnv),
       });
     } else if (this.config.transport === dgraphResolversTypes.McpTransportType.Stream) {
-      this.logger.debug(`Setting Streamable HTTP transport with server URL: ${this.config.serverUrl}`);
+      this.logger.info(`Setting Streamable HTTP transport with server URL: ${this.config.serverUrl}`);
       this.logger.debug(`Headers: ${this.config.headers}`);
 
       const parseHeaders = (headers: string) => {
