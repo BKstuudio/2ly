@@ -76,7 +76,7 @@ const FEATURED_SERVERS: McpServerFromRegistry[] = [
             packages: [
                 {
                     identifier: '@modelcontextprotocol/server-filesystem',
-                    version: '0.6.3',
+                    version: '2025.8.21',
                     registryType: 'npm',
                     registryBaseUrl: 'https://registry.npmjs.org',
                     runtimeHint: 'npx',
@@ -89,7 +89,7 @@ const FEATURED_SERVERS: McpServerFromRegistry[] = [
                             description: 'The directory path to allow access to',
                             format: 'string',
                             type: 'positional',
-                            isRequired: true,
+                            isRequired: false,
                         },
                     ],
                     environmentVariables: [],
