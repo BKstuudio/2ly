@@ -40,9 +40,9 @@ export class ToolService extends Service {
 
   protected async initialize() {
     this.logger.info('Starting');
-    await this.identityService.start(this.name);
+    await this.startService(this.identityService);
     await this.healthService.waitForStarted();
-    await this.toolClientService.start(this.name);
+    await this.startService(this.toolClientService);
     this.setRoots();
     this.setGlobalRuntime();
     this.setDefaultTestingRuntime();
@@ -50,8 +50,8 @@ export class ToolService extends Service {
 
   protected async shutdown() {
     this.logger.info('Stopping');
-    await this.toolClientService.stop(this.name);
-    await this.identityService.stop(this.name);
+    await this.stopService(this.toolClientService);
+    await this.stopService(this.identityService);
   }
 
   private async setRoots() {

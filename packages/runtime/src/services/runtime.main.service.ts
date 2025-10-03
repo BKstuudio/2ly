@@ -36,8 +36,8 @@ export class MainService extends Service {
     this.logger.info(`Starting with PID: ${process.pid}`);
     this.registerGracefulShutdown();
 
-    await this.natsService.start(this.name);
-    await this.identityService.start(this.name);
+    await this.startService(this.natsService);
+    await this.startService(this.identityService);
 
     try {
       // INIT PHASE
@@ -72,15 +72,15 @@ export class MainService extends Service {
     }
 
     // START PHASE
-    await this.healthService.start(this.name);
+    await this.startService(this.healthService);
 
     if (this.identityService.getAgentCapability() === true || this.identityService.getAgentCapability() === 'auto') {
       this.logger.info(`Starting agent service`);
-      this.agentService.start(this.name);
+      await this.startService(this.agentService);
     }
     if (this.identityService.getToolCapability() === true) {
       this.logger.info(`Starting tool service`);
-      this.toolService.start(this.name);
+      await this.startService(this.toolService);
     }
 
     // When agent service initializes, it means that the runtime is acting as an MCP server
@@ -113,10 +113,22 @@ export class MainService extends Service {
   protected async shutdown() {
     this.logger.info('Stopping');
     // no need to send disconnect message, health service kills the heartbeat signal upon stopping
-    await this.healthService.stop(this.name);
-    await this.toolService.stop(this.name);
-    await this.agentService.stop(this.name);
-    await this.natsService.stop(this.name);
+    await this.stopService(this.healthService);
+    await this.stopService(this.toolService);
+    await this.stopService(this.agentService);
+    await this.stopService(this.natsService);
+    await this.stopService(this.identityService);
+
+    // Check if any services are still active
+    const activeServices = Service.getActiveServices();
+    if (activeServices.length > 0) {
+      this.logger.warn('⚠️  Some services are still active after shutdown:');
+      activeServices.forEach(service => {
+        this.logger.warn(
+          `   - Service "${service.name}" (${service.state}) is kept alive by consumers: [${service.consumers.join(', ')}]`
+        );
+      });
+    }
   }
 
   public async reconnect() {

@@ -41,12 +41,12 @@ export class IdentityService extends Service {
 
   protected async initialize() {
     this.logger.info('Starting');
-    await this.natsService.start(this.name);
+    await this.startService(this.natsService);
   }
 
   protected async shutdown() {
     this.logger.info('Stopping');
-    await this.natsService.stop(this.name);
+    await this.stopService(this.natsService);
   }
 
   getId() {

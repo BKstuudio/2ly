@@ -69,9 +69,9 @@ export class AgentServerService extends Service {
 
   protected async initialize() {
     this.logger.info('Starting');
-    await this.identityService.start(this.name);
-    await this.natsService.start(this.name);
-    await this.healthService.start(this.name);
+    await this.startService(this.identityService);
+    await this.startService(this.natsService);
+    await this.startService(this.healthService);
     await this.startServer();
   }
 
@@ -80,9 +80,9 @@ export class AgentServerService extends Service {
     await this.stopServer();
     this.rxSubscriptions.forEach((subscription) => subscription.unsubscribe());
     this.rxSubscriptions = [];
-    await this.natsService.stop(this.name);
-    await this.identityService.stop(this.name);
-    await this.healthService.stop(this.name);
+    await this.stopService(this.natsService);
+    await this.stopService(this.identityService);
+    await this.stopService(this.healthService);
   }
 
   private async startServer() {

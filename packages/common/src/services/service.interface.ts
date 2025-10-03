@@ -12,6 +12,22 @@ export abstract class Service {
  */
   protected startedAt = new Date().toISOString();
 
+  /**
+   * Static registry of all active services (not STARTED or STARTING)
+   */
+  private static activeServices = new Set<Service>();
+
+  /**
+   * Get detailed information about all currently active services
+   */
+  static getActiveServices(): Array<{ name: string; state: string; consumers: string[] }> {
+    return Array.from(Service.activeServices).map(service => ({
+      name: service.name,
+      state: service.state,
+      consumers: Array.from(service.consumers),
+    }));
+  }
+
   async start(consumer: string): Promise<void> {
     if (this.consumers.has(consumer)) {
       throw new Error(`Service ${this.name} has already a consumer called ${consumer}. Consumers must be unique!`);
@@ -29,6 +45,7 @@ export abstract class Service {
     } else if (this.state === 'STOPPED') {
       this.consumers.add(consumer);
       this.state = 'STARTING';
+      Service.activeServices.add(this);
       this.currentPromise = this.initialize();
       await this.currentPromise;
       this.currentPromise = undefined;
@@ -62,6 +79,7 @@ export abstract class Service {
     // when consumers = 0 => shutdown the service
     if (this.state === 'STARTED') {
       this.state = 'STOPPING';
+      Service.activeServices.delete(this);
       this.currentPromise = this.shutdown();
       await this.currentPromise;
       this.state = 'STOPPED';
@@ -82,6 +100,20 @@ export abstract class Service {
     } else {
       throw new Error(`Unknown state ${this.state}`);
     }
+  }
+
+  /**
+   * Start a child service, using this service's name as the consumer
+   */
+  async startService(service: Service): Promise<void> {
+    return service.start(this.name);
+  }
+
+  /**
+   * Stop a child service, using this service's name as the consumer
+   */
+  async stopService(service: Service): Promise<void> {
+    return service.stop(this.name);
   }
 
   /**

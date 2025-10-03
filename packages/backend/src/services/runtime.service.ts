@@ -53,9 +53,9 @@ export class RuntimeService extends Service {
 
   protected async initialize() {
     this.logger.info('Starting');
-    await this.dgraphService.start(this.name);
+    await this.startService(this.dgraphService);
     await this.dgraphService.initSchema(this.dropAllData);
-    await this.natsService.start(this.name);
+    await this.startService(this.natsService);
     await this.rehydrateRuntimes();
     this.subscribeToRuntime();
   }
@@ -72,14 +72,12 @@ export class RuntimeService extends Service {
       }
     }
     this.subscriptions = [];
-    console.log('start shutting down runtime instances', this.runtimeInstances.size);
     for (const runtimeInstance of this.runtimeInstances.values()) {
-      await runtimeInstance.stop(this.name);
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await runtimeInstance.stop('runtime');
     }
     this.runtimeInstances.clear();
-    await this.natsService.stop(this.name);
-    await this.dgraphService.stop(this.name);
+    await this.stopService(this.natsService);
+    await this.stopService(this.dgraphService);
   }
 
   isRunning(): boolean {
@@ -118,6 +116,7 @@ export class RuntimeService extends Service {
             this.runtimeInstances.set(key, runtimeInstance);
           },
           () => {
+            runtimeInstance.stop('runtime');
             this.runtimeInstances.delete(key);
           },
         )
@@ -258,6 +257,7 @@ export class RuntimeService extends Service {
             this.runtimeInstances.set(RID, runtimeInstance);
             msg.respond(new AckMessage({ metadata: { RID: RID, workspaceId: workspace.id, id: instance.id } }));
           }, () => {
+            runtimeInstance.stop('runtime');
             this.runtimeInstances.delete(RID);
           });
       }

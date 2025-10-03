@@ -120,7 +120,6 @@ export class RuntimeInstance extends Service {
     }
     this.logger.info(`Disconnecting runtime 1 ${this.metadata.RID}`);
     await this.runtimeRepository.setInactive(this.instance.id);
-    this.shutdown();
     this.onDisconnect();
   }
 

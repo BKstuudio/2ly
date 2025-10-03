@@ -22,15 +22,15 @@ export class MonitoringService extends Service {
 
     protected async initialize() {
         this.logger.info('Initializing MonitoringService');
-        await this.natsService.start(this.name);
-        await this.dgraphService.start(this.name);
+        await this.startService(this.natsService);
+        await this.startService(this.dgraphService);
         this.monitorCallTools();
     }
 
     protected async shutdown() {
         this.logger.info('Shutting down MonitoringService');
-        await this.dgraphService.stop(this.name);
-        await this.natsService.stop(this.name);
+        await this.stopService(this.dgraphService);
+        await this.stopService(this.natsService);
     }
 
     private async monitorCallTools() {

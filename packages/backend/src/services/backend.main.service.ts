@@ -31,22 +31,33 @@ export class MainService extends Service {
 
   protected async initialize() {
     this.logger.info('Starting');
-    await this.runtimeService.start(this.name);
+    await this.startService(this.runtimeService);
     this.registerHealthCheck();
     this.registerUtilityEndpoints();
-    await this.apolloService.start(this.name);
+    await this.startService(this.apolloService);
     await this.initInstance();
-    await this.mcpServerAutoConfigService.start(this.name);
-    await this.monitoringService.start(this.name);
+    await this.startService(this.mcpServerAutoConfigService);
+    await this.startService(this.monitoringService);
     this.registerGracefulShutdown();
   }
 
   protected async shutdown() {
     this.logger.info('Stopping');
-    await this.runtimeService.stop(this.name);
-    await this.apolloService.stop(this.name);
-    await this.mcpServerAutoConfigService.stop(this.name);
-    await this.monitoringService.stop(this.name);
+    await this.stopService(this.runtimeService);
+    await this.stopService(this.apolloService);
+    await this.stopService(this.mcpServerAutoConfigService);
+    await this.stopService(this.monitoringService);
+
+    // Check if any services are still active
+    const activeServices = Service.getActiveServices();
+    if (activeServices.length > 0) {
+      this.logger.warn('⚠️  Some services are still active after shutdown:');
+      activeServices.forEach(service => {
+        this.logger.warn(
+          `   - Service "${service.name}" (${service.state}) is kept alive by consumers: [${service.consumers.join(', ')}]`
+        );
+      });
+    }
   }
 
   private async initInstance() {

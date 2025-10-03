@@ -82,7 +82,7 @@ export class ApolloService extends Service {
 
   protected async initialize() {
     this.logger.info('Starting');
-    await this.dgraphService.start(this.name);
+    await this.startService(this.dgraphService);
     await this.apollo.start();
 
     // Register WebSocket handler at /graphql-ws to avoid conflict with HTTP /graphql
@@ -117,15 +117,15 @@ export class ApolloService extends Service {
         },
       },
     });
-    this.fastifyService.start(this.name);
+    await this.startService(this.fastifyService);
   }
 
   protected async shutdown() {
     this.logger.info('Stopping');
-    await this.fastifyService.stop(this.name);
+    await this.stopService(this.fastifyService);
     await this.apollo.stop();
     this.wsCleanup?.dispose();
-    await this.dgraphService.stop(this.name);
+    await this.stopService(this.dgraphService);
   }
 
   /**

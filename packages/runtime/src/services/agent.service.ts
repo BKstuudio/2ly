@@ -22,12 +22,12 @@ export class AgentService extends Service {
     this.agentServerService.onInitializeMCPServer(() => {
       this.onInitializeMCPServerCallbacks.forEach((callback) => callback());
     });
-    await this.agentServerService.start(this.name);
+    await this.startService(this.agentServerService);
   }
 
   protected async shutdown() {
     this.logger.info('Stopping');
-    await this.agentServerService.stop(this.name);
+    await this.stopService(this.agentServerService);
   }
 
   public onInitializeMCPServer(callback: () => void) {
