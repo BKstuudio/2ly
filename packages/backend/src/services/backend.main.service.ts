@@ -47,17 +47,7 @@ export class MainService extends Service {
     await this.stopService(this.apolloService);
     await this.stopService(this.mcpServerAutoConfigService);
     await this.stopService(this.monitoringService);
-
-    // Check if any services are still active
-    const activeServices = Service.getActiveServices();
-    if (activeServices.length > 0) {
-      this.logger.warn('⚠️  Some services are still active after shutdown:');
-      activeServices.forEach(service => {
-        this.logger.warn(
-          `   - Service "${service.name}" (${service.state}) is kept alive by consumers: [${service.consumers.join(', ')}]`
-        );
-      });
-    }
+    this.logActiveServices();
   }
 
   private async initInstance() {
@@ -148,12 +138,25 @@ export class MainService extends Service {
     this.isShuttingDown = true;
     const keepAlive = setInterval(() => {
       console.log('processing shutdown...');
-    }, 1000);
+      this.logActiveServices();
+    }, 2000);
     this.logger.info(`Graceful shutdown: ${signal}`);
     // the shutdown is expressed from the index consumer point of view
     // we might want to move the gracefull shutdown logic into index
     await this.stop('index');
     clearInterval(keepAlive);
     process.exit(0);
+  }
+
+  private logActiveServices() {
+    const activeServices = Service.getActiveServices();
+    if (activeServices.length > 0) {
+      this.logger.warn('⚠️  Some services are still active after shutdown:');
+      activeServices.forEach(service => {
+        this.logger.warn(
+          `   - Service "${service.name}" (${service.state}) is kept alive by consumers: [${service.consumers.join(', ')}]`
+        );
+      });
+    }
   }
 }
