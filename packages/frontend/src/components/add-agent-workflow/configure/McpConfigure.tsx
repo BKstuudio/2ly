@@ -29,9 +29,44 @@ const FEATURED_SERVERS: McpServerFromRegistry[] = [
             },
         },
         server: {
+            name: 'io.github.github/github-mcp-server',
+            description: 'Connect AI assistants to GitHub - manage repos, issues, PRs, and workflows through natural language.',
+            version: '0.17.1',
+            repository: {
+                url: 'https://github.com/github/github-mcp-server',
+                source: 'github',
+                id: 'github/github-mcp-server',
+            },
+            packages: [],
+            remotes: [
+                {
+                    type: 'streamable',
+                    url: 'https://api.githubcopilot.com/mcp/',
+                    headers: [
+                        {
+                            name: 'Authorization',
+                            description: 'Bearer token with your GitHub personal access token',
+                            format: 'string',
+                            isRequired: true,
+                        },
+                    ],
+                },
+            ],
+        },
+    },
+    {
+        _meta: {
+            'io.modelcontextprotocol.registry/official': {
+                isLatest: true,
+                publishedAt: new Date().toISOString(),
+                status: 'active',
+                updatedAt: new Date().toISOString(),
+            },
+        },
+        server: {
             name: 'modelcontextprotocol/server-filesystem',
-            description: 'Access and manipulate files and directories on your local filesystem',
-            version: '0.6.2',
+            description: 'MCP server for filesystem access - read, write, create, list, delete files and directories',
+            version: '0.6.3',
             repository: {
                 url: 'https://github.com/modelcontextprotocol/servers',
                 source: 'github',
@@ -41,93 +76,78 @@ const FEATURED_SERVERS: McpServerFromRegistry[] = [
             packages: [
                 {
                     identifier: '@modelcontextprotocol/server-filesystem',
-                    version: '0.6.2',
+                    version: '0.6.3',
                     registryType: 'npm',
                     registryBaseUrl: 'https://registry.npmjs.org',
                     runtimeHint: 'npx',
                     transport: {
                         type: 'stdio',
                     },
-                    packageArguments: [],
-                    environmentVariables: [],
-                },
-            ],
-        },
-    },
-    {
-        _meta: {
-            'io.modelcontextprotocol.registry/official': {
-                isLatest: true,
-                publishedAt: new Date().toISOString(),
-                status: 'active',
-                updatedAt: new Date().toISOString(),
-            },
-        },
-        server: {
-            name: 'modelcontextprotocol/server-fetch',
-            description: 'Fetch web content and convert it to markdown for easy consumption',
-            version: '0.6.5',
-            repository: {
-                url: 'https://github.com/modelcontextprotocol/servers',
-                source: 'github',
-                id: 'modelcontextprotocol/servers',
-                subfolder: 'src/fetch',
-            },
-            packages: [
-                {
-                    identifier: '@modelcontextprotocol/server-fetch',
-                    version: '0.6.5',
-                    registryType: 'npm',
-                    registryBaseUrl: 'https://registry.npmjs.org',
-                    runtimeHint: 'npx',
-                    transport: {
-                        type: 'stdio',
-                    },
-                    packageArguments: [],
-                    environmentVariables: [],
-                },
-            ],
-        },
-    },
-    {
-        _meta: {
-            'io.modelcontextprotocol.registry/official': {
-                isLatest: true,
-                publishedAt: new Date().toISOString(),
-                status: 'active',
-                updatedAt: new Date().toISOString(),
-            },
-        },
-        server: {
-            name: 'modelcontextprotocol/server-brave-search',
-            description: 'Search the web using Brave Search API for real-time information',
-            version: '0.6.2',
-            repository: {
-                url: 'https://github.com/modelcontextprotocol/servers',
-                source: 'github',
-                id: 'modelcontextprotocol/servers',
-                subfolder: 'src/brave-search',
-            },
-            packages: [
-                {
-                    identifier: '@modelcontextprotocol/server-brave-search',
-                    version: '0.6.2',
-                    registryType: 'npm',
-                    registryBaseUrl: 'https://registry.npmjs.org',
-                    runtimeHint: 'npx',
-                    transport: {
-                        type: 'stdio',
-                    },
-                    packageArguments: [],
-                    environmentVariables: [
+                    packageArguments: [
                         {
-                            name: 'BRAVE_API_KEY',
-                            description: 'API key for Brave Search',
+                            name: 'directory_path',
+                            description: 'The directory path to allow access to',
                             format: 'string',
+                            type: 'positional',
                             isRequired: true,
-                            isSecret: true,
                         },
                     ],
+                    environmentVariables: [],
+                },
+                {
+                    identifier: 'mcp/filesystem',
+                    version: 'latest',
+                    registryType: 'docker',
+                    registryBaseUrl: 'https://hub.docker.com',
+                    runtimeHint: 'docker',
+                    transport: {
+                        type: 'stdio',
+                    },
+                    packageArguments: [
+                        {
+                            name: 'directory_path',
+                            description: 'The directory path to allow access to (inside container)',
+                            format: 'string',
+                            type: 'positional',
+                            isRequired: true,
+                            default: '/projects',
+                        },
+                    ],
+                    environmentVariables: [],
+                },
+            ],
+        },
+    },
+    {
+        _meta: {
+            'io.modelcontextprotocol.registry/official': {
+                isLatest: true,
+                publishedAt: new Date().toISOString(),
+                status: 'active',
+                updatedAt: new Date().toISOString(),
+            },
+        },
+        server: {
+            name: 'erithwik/mcp-hn',
+            description: 'MCP Server for Hacker News - fetch stories, search, get user info and story comments',
+            version: '0.1.0',
+            repository: {
+                url: 'https://github.com/erithwik/mcp-hn',
+                source: 'github',
+                id: 'erithwik/mcp-hn',
+            },
+            packages: [
+                {
+                    identifier: 'mcp-hn',
+                    version: '0.1.0',
+                    registryType: 'pypi',
+                    registryBaseUrl: 'https://pypi.org',
+                    runtimeHint: 'uvx',
+                    transport: {
+                        type: 'stdio',
+                    },
+                    packageArguments: [],
+                    environmentVariables: [],
                 },
             ],
         },
