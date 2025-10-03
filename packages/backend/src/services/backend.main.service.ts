@@ -122,12 +122,18 @@ export class MainService extends Service {
     process.on('SIGINT', () => this.gracefulShutdown('SIGINT'));
     process.on('SIGTERM', () => this.gracefulShutdown('SIGTERM'));
     process.on('uncaughtException', (error: Error) => {
-      this.logger.error('Uncaught exception');
+      this.logger.error(`Uncaught exception: ${error.message}`);
+      if (error.stack) {
+        this.logger.error(`Stack trace: ${error.stack}`);
+      }
       console.error(error);
       this.gracefulShutdown('uncaughtException');
     });
     process.on('unhandledRejection', (error) => {
-      this.logger.error('Unhandled rejection');
+      this.logger.error(`Unhandled rejection: ${error}`);
+      if (error instanceof Error && error.stack) {
+        this.logger.error(`Stack trace: ${error.stack}`);
+      }
       console.error(error);
       this.gracefulShutdown('unhandledRejection');
     });
