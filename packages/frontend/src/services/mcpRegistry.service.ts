@@ -95,7 +95,14 @@ export function isConfigurationSupported(config: McpServerConfig): boolean {
         if (config.transport?.type !== 'stdio') {
             return false;
         }
-        if (config.registryBaseUrl !== 'https://registry.npmjs.org') {
+        // Support npm, pypi, docker, and oci registries
+        const supportedRegistries = [
+            'https://registry.npmjs.org',
+            'https://pypi.org',
+            'https://hub.docker.com',
+            'https://ghcr.io'
+        ];
+        if (config.registryBaseUrl && !supportedRegistries.includes(config.registryBaseUrl)) {
             return false;
         }
         return true;
@@ -149,7 +156,7 @@ export function extractConfigurableParts(config: McpServerConfig): ConfigurableP
                     if (arg.choices && arg.choices.length > 0) {
                         parts.push({ context: 'header', type: 'choices', name: arg.name, description: arg.description, default: String(arg.default ?? ''), required: arg.isRequired, choices: arg.choices.map((c) => String(c)) });
                     } else {
-                        parts.push({ context: 'header', type: 'string', name: arg.name, description: arg.description, default: String(arg.default ?? ''), required: arg.isRequired });
+                        parts.push({ context: 'header', type: 'string', name: arg.name, description: arg.description, default: String(arg.default ?? ''), required: arg.isRequired, secret: arg.isSecret });
                     }
                     break;
                 default:
@@ -186,12 +193,8 @@ export function mapConfig(serverResponse: McpServerFromRegistry, config: McpServ
     }, {} as Record<string, string | null>);
 
     if (isPackage(config)) {
-        const runtimeHint = config.runtimeHint ?? '';
-        if (runtimeHint === 'npx') {
-            transport = 'STDIO';
-        } else {
-            transport = 'STDIO';
-        }
+        transport = 'STDIO';
+
         switch (config.registryType) {
             case 'npm':
                 if (config.registryBaseUrl !== 'https://registry.npmjs.org') {
@@ -214,30 +217,97 @@ export function mapConfig(serverResponse: McpServerFromRegistry, config: McpServ
                             throw new Error(`Unsupported argument type for package based MCP server: ${arg.type}`);
                     }
                 }
-
-
-
                 for (const env of config.environmentVariables ?? []) {
                     ENV[env.name] = configEnvValues[env.name] ?? env.value ?? '';
                 }
                 break;
+
+            case 'pypi':
+                command = 'uvx';
+                args.push(config.identifier);
+                for (const arg of config.packageArguments ?? []) {
+                    const value = arg.name
+                        ? (configPackageArgumentValues[arg.name] ?? arg.value ?? arg.default ?? '')
+                        : (arg.value ?? arg.default ?? '');
+                    switch (arg.type) {
+                        case 'positional':
+                            args.push(value);
+                            break;
+                        case 'named':
+                            args.push(`--${arg.name}=${value}`);
+                            break;
+                        default:
+                            throw new Error(`Unsupported argument type for package based MCP server: ${arg.type}`);
+                    }
+                }
+                for (const env of config.environmentVariables ?? []) {
+                    ENV[env.name] = configEnvValues[env.name] ?? env.value ?? '';
+                }
+                break;
+
+            case 'docker':
+            case 'oci': {
+                command = 'docker';
+                args.push('run');
+                args.push('-i');
+                args.push('--rm');
+
+                // Add environment variables as -e flags
+                for (const env of config.environmentVariables ?? []) {
+                    const value = configEnvValues[env.name] ?? env.value ?? '';
+                    if (value) {
+                        args.push('-e');
+                        args.push(env.name);
+                        ENV[env.name] = value;
+                    }
+                }
+
+                // Add the image identifier
+                const imageUrl = config.registryType === 'oci'
+                    ? `${config.registryBaseUrl}/${config.identifier}:${config.version}`
+                    : `${config.identifier}:${config.version}`;
+                args.push(imageUrl);
+
+                // Add package arguments
+                for (const arg of config.packageArguments ?? []) {
+                    const value = arg.name
+                        ? (configPackageArgumentValues[arg.name] ?? arg.value ?? arg.default ?? '')
+                        : (arg.value ?? arg.default ?? '');
+                    if (value) {
+                        switch (arg.type) {
+                            case 'positional':
+                                args.push(value);
+                                break;
+                            case 'named':
+                                args.push(`--${arg.name}=${value}`);
+                                break;
+                            default:
+                                throw new Error(`Unsupported argument type for package based MCP server: ${arg.type}`);
+                        }
+                    }
+                }
+                break;
+            }
+
             default:
-                serverUrl = '';
-                headers = '';
                 throw new Error(`Unsupported registry type for package based MCP server: ${config.registryType}`);
         }
     } else if (isRemote(config)) {
         switch (config.type) {
-            case 'streamable':
+            case 'streamable': {
                 transport = 'STREAM';
+                serverUrl = config.url ?? '';
+
+                // Format headers from configurable parts (key: value format)
+                const headerEntries = Object.entries(configHeaderValues)
+                    .filter(([, value]) => value !== null && value !== '')
+                    .map(([key, value]) => `${key}: ${value}`);
+                headers = headerEntries.join('\n');
                 break;
+            }
             default:
                 throw new Error(`Unsupported remote transport type for remote based MCP server: ${config.type}`);
         }
-        // Use configHeaderValues for remote server configuration
-        headers = JSON.stringify(configHeaderValues);
-        throw new Error(`Remote MCP servers are not supported yet`);
-        // const t = (config as unknown as { transport_type: string });
     }
     return {
         name,

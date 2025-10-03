@@ -45,9 +45,10 @@ const FEATURED_SERVERS: McpServerFromRegistry[] = [
                     headers: [
                         {
                             name: 'Authorization',
-                            description: 'Bearer token with your GitHub personal access token',
+                            description: 'Bearer token with your GitHub personal access token. Format as `Bearer $PAT`',
                             format: 'string',
                             isRequired: true,
+                            isSecret: true,
                         },
                     ],
                 },
@@ -441,10 +442,10 @@ const McpConfigure: React.FC<McpConfigureProps> = ({ onSuccessExit }) => {
                                 rows={3}
                                 value={formData.headers || ''}
                                 onChange={(e) => onFormDataChange('headers', e.target.value)}
-                                placeholder="Enter headers in format: header_name header_value (one per line)"
+                                placeholder="Enter headers in format: Header-Name: header-value (one per line)"
                                 className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                             />
-                            <p className="text-xs text-gray-500 mt-1">Format: &lt;header_name&gt;&lt;space&gt;&lt;header_value&gt; (one per line)</p>
+                            <p className="text-xs text-gray-500 mt-1">Format: Header-Name: header-value (one per line)</p>
                         </div>
                     </>
                 )}
