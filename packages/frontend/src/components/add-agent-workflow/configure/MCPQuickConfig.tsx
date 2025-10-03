@@ -101,23 +101,8 @@ const MCPQuickConfig: React.FC<Props> = ({ selectedServer, onValidityChange, onC
     }, [parts, selectedVersion, selectedServer, nameInput, defaultServerName, onConfigChange]);
 
     const handlePartChange = useCallback((name: string, value: string): void => {
-        setParts((prev) => {
-            const next = prev.map((p) => (p.name === name ? { ...p, value } : p));
-            if (selectedVersion && selectedVersion.isSupported) {
-                const mapped = mapConfig(selectedServer, selectedVersion.config, next);
-                if (onConfigChange) onConfigChange(mapped);
-            }
-            if (onValidityChange) {
-                const isValid = next.every((p) => {
-                    if (!p.required) return true;
-                    const effective = (p.value ?? p.default ?? '').toString().trim();
-                    return effective !== '';
-                });
-                onValidityChange(isValid);
-            }
-            return next;
-        });
-    }, [selectedVersion, selectedServer, onValidityChange, onConfigChange]);
+        setParts((prev) => prev.map((p) => (p.name === name ? { ...p, value } : p)));
+    }, []);
 
     const toggleSecretVisibility = useCallback((partName: string) => {
         setVisibleSecrets(prev => {
