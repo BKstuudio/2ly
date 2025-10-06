@@ -108,7 +108,8 @@ export class ToolServerService extends Service {
     this.logger.info('Stopping');
     this.tools.complete();
     await this.onShutdownCallback();
-    this.client.close();
+    await this.transport.close();
+    await this.client.close();
     this.logger.debug('Disconnected');
   }
 
