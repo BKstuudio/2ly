@@ -34,7 +34,7 @@ export const routeConfig: RouteConfig[] = [
     authRequired: false,
     meta: {
       title: '2ly - AI Tool Management',
-      description: 'Welcome to 2ly, the AI tool management platform',
+      description: 'Welcome to 2LY, the AI tool management platform',
       breadcrumb: 'Home'
     }
   },
