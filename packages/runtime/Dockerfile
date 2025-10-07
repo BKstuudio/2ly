@@ -1,4 +1,22 @@
 # Dockerfile for 2LY Runtime
+# Stage 1: Build
+FROM node:22-alpine AS builder
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY tsconfig.json ./
+COPY packages/runtime/ ./packages/runtime/
+COPY packages/common/ ./packages/common/
+
+# Install all dependencies (including dev for TypeScript compilation)
+RUN npm ci --quiet
+
+# Build the runtime
+RUN npm run build -w @2ly/runtime
+
+# Stage 2: Production
 FROM node:22-alpine
 
 # Install Python 3.12 and uv for MCP server execution
@@ -14,47 +32,28 @@ RUN apk add --no-cache \
   && curl -LsSf https://astral.sh/uv/install.sh | sh \
   && cp /root/.local/bin/uv /usr/local/bin/uv \
   && cp /root/.local/bin/uvx /usr/local/bin/uvx \
-  && chmod 755 /usr/local/bin/uv /usr/local/bin/uvx
+  && chmod 755 /usr/local/bin/uv /usr/local/bin/uvx \
+  && rm -rf /root/.local \
+  && apk del curl
 
-# Create app directory
 WORKDIR /app
+
+# Copy only the built artifacts from builder
+COPY --from=builder /app/packages/runtime/dist ./packages/runtime/dist
 
 # Create logs directory
 RUN mkdir -p logs
 
-# Copy package files
-COPY package*.json ./
-COPY tsconfig.json ./
-COPY packages/runtime/ ./packages/runtime/
-COPY packages/common/ ./packages/common/
-
-# Install dependencies
-RUN npm install
-
-# Build the runtime 
-RUN npm run build -w @2ly/runtime
-
-# Remove unnecessary node_modules now that we have a build
-RUN rm -rf node_modules
-RUN rm -rf packages/runtime/node_modules
-RUN rm -rf packages/common/node_modules
-
 # Create non-root user
 RUN addgroup -g 1001 -S runtime && \
-  adduser -S runtime -u 1001
+  adduser -S runtime -u 1001 && \
+  chown -R runtime:runtime /app
 
-# Change ownership of app directory
-RUN chown -R runtime:runtime /app
-
-# Switch to non-root user
 USER runtime
 
-# Expose any monitoring ports if needed
 EXPOSE 3000
 
-# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD node -e "console.log('Health check - runtime running')" || exit 1
 
-# Start the application
 CMD ["node", "packages/runtime/dist/index.js"]
