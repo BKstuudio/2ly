@@ -1,6 +1,21 @@
 # Dockerfile for 2LY Runtime
 FROM node:22-alpine
 
+# Install Python 3.12 and uv for MCP server execution
+# - Install Python and pip from Alpine repos
+# - Create python symlink for compatibility
+# - Install uv (fast Python package manager) via official installer
+# - Copy uv/uvx to /usr/local/bin so non-root users can access them
+RUN apk add --no-cache \
+  python3 \
+  py3-pip \
+  curl \
+  && ln -sf /usr/bin/python3 /usr/bin/python \
+  && curl -LsSf https://astral.sh/uv/install.sh | sh \
+  && cp /root/.local/bin/uv /usr/local/bin/uv \
+  && cp /root/.local/bin/uvx /usr/local/bin/uvx \
+  && chmod 755 /usr/local/bin/uv /usr/local/bin/uvx
+
 # Create app directory
 WORKDIR /app
 
