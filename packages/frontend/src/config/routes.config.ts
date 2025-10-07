@@ -49,7 +49,7 @@ export const routeConfig: RouteConfig[] = [
     },
     meta: {
       title: 'Login - 2ly',
-      description: 'Sign in to your 2ly account',
+      description: 'Sign in to your 2LY account',
       breadcrumb: 'Login'
     }
   },
